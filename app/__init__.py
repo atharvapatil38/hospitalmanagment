@@ -5,7 +5,7 @@ from app.extensions import db, login_manager, csrf
 from app.utils.helpers import format_currency, format_date, format_datetime, status_badge_class, get_hospital_setting
 
 def create_app(config_name='development'):
-    app = Flask(__name__)
+    app = Flask(__name__, static_folder='static', static_url_path='/static')
     app.config.from_object(config.get(config_name, config['default']))
 
     # Ensure instance folder exists safely
