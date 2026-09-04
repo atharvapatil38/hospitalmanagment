@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block title %}Rx - {{ prescription.prescription_id }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 no-print">
+    <div>
+        <h4 class="fw-bold mb-0 text-dark"><i class="bi bi-prescription2 me-2 text-primary"></i>Medical Prescription Slip</h4>
+        <div class="text-muted small">Ref: <code>{{ prescription.prescription_id }}</code> • Date: {{ prescription.prescription_date | format_date }}</div>
+    </div>
+    <div class="d-flex gap-2">
+        <button onclick="window.print()" class="btn btn-primary btn-sm">
+            <i class="bi bi-printer-fill me-1"></i>Print Prescription Slip
+        </button>
+        <a href="{{ url_for('prescriptions.index') }}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left me-1"></i>Back
+        </a>
+    </div>
+</div>
+
+<div class="print-sheet shadow-sm">
+    <!-- Header with Hospital Info & Doctor Header -->
+    <div class="print-header d-flex justify-content-between align-items-start pb-3 mb-3 border-bottom">
+        <div>
+            <h3 class="fw-bold text-primary mb-0"><i class="bi bi-hospital-fill me-2"></i>{{ hospital_name }}</h3>
+            <div class="text-muted small">{{ hospital_address }}</div>
+            <div class="text-muted small">Phone: {{ hospital_phone }} • Email: {{ hospital_email }}</div>
+        </div>
+        <div class="text-end">
+            <h5 class="fw-bold text-dark mb-0">Dr. {{ prescription.doctor.name }}</h5>
+            <div class="text-secondary small">{{ prescription.doctor.qualification }}</div>
+            <div class="text-primary small fw-semibold">{{ prescription.doctor.specialization }} ({{ prescription.doctor.department.name }})</div>
+            <div class="text-muted small font-monospace">DOC ID: {{ prescription.doctor.doctor_code }}</div>
+        </div>
+    </div>
+
+    <!-- Patient Bar -->
+    <div class="row g-2 p-3 bg-light rounded mb-4" style="font-size: 0.9rem;">
+        <div class="col-6">
+            <div><span class="text-muted">Patient Name:</span> <strong>{{ prescription.patient.full_name }}</strong></div>
+            <div><span class="text-muted">Patient ID:</span> <code>{{ prescription.patient.patient_id }}</code></div>
+            <div><span class="text-muted">Age / Gender:</span> {{ prescription.patient.age }} yrs / {{ prescription.patient.gender }}</div>
+        </div>
+        <div class="col-6 text-end">
+            <div><span class="text-muted">Prescription ID:</span> <code>{{ prescription.prescription_id }}</code></div>
+            <div><span class="text-muted">Date:</span> <strong>{{ prescription.prescription_date | format_date }}</strong></div>
+            <div><span class="text-muted">Diagnosis:</span> <span class="fw-bold text-primary">{{ prescription.diagnosis }}</span></div>
+        </div>
+    </div>
+
+    <!-- Rx Symbol & Medicines Table -->
+    <div class="mb-4">
+        <div class="fs-3 fw-bold text-primary mb-2 font-serif" style="font-family: serif;">℞</div>
+        <table class="table table-bordered align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th style="width: 5%;">#</th>
+                    <th style="width: 35%;">Medication & Strength</th>
+                    <th style="width: 20%;">Dosage / Frequency</th>
+                    <th style="width: 15%;">Duration</th>
+                    <th style="width: 25%;">Instructions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in prescription.items %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td>
+                        <strong class="text-dark">{{ item.medicine_name }}</strong>
+                        <div class="text-muted small">{{ item.dosage }}</div>
+                    </td>
+                    <td><span class="badge bg-light text-dark border">{{ item.frequency }}</span></td>
+                    <td>{{ item.duration }}</td>
+                    <td class="small">{{ item.instructions }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- General Advice & Dietary Notes -->
+    {% if prescription.general_advice %}
+    <div class="mb-4">
+        <h6 class="fw-bold text-primary border-bottom pb-1 mb-2">Advice & Lifestyle Instructions:</h6>
+        <div class="p-3 bg-light rounded text-secondary" style="white-space: pre-line; font-size: 0.9rem;">
+            {{ prescription.general_advice }}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Footer Signature Stamp -->
+    <div class="row mt-5 pt-4">
+        <div class="col-6 text-muted small">
+            <div>* Take medicines as prescribed.</div>
+            <div>* In case of any adverse drug reaction, report immediately.</div>
+        </div>
+        <div class="col-6 text-end">
+            <div class="border-top border-dark d-inline-block pt-2" style="width: 200px;">
+                <div class="fw-bold text-dark">Dr. {{ prescription.doctor.name }}</div>
+                <div class="text-muted small">Registered Medical Practitioner</div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

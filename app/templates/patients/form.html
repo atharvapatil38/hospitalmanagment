@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="d-flex align-items-center justify-content-between mb-4">
+            <div>
+                <h4 class="fw-bold mb-0 text-dark"><i class="bi bi-person-fill-plus me-2 text-primary"></i>{{ title }}</h4>
+                <div class="text-muted small">Enter patient demographic, contact, and initial clinical information</div>
+            </div>
+            <a href="{{ url_for('patients.index') }}" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-arrow-left me-1"></i>Back to Directory
+            </a>
+        </div>
+
+        <form method="POST">
+            {{ form.hidden_tag() }}
+
+            <!-- Demographics Card -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light">
+                    <span class="fw-bold text-dark"><i class="bi bi-person me-2 text-primary"></i>1. Patient Demographics</span>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold small">First Name <span class="text-danger">*</span></label>
+                            {{ form.first_name(class="form-control" + (" is-invalid" if form.first_name.errors else ""), placeholder="e.g. John") }}
+                            {% for error in form.first_name.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold small">Last Name <span class="text-danger">*</span></label>
+                            {{ form.last_name(class="form-control" + (" is-invalid" if form.last_name.errors else ""), placeholder="e.g. Doe") }}
+                            {% for error in form.last_name.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold small">Date of Birth <span class="text-danger">*</span></label>
+                            {{ form.dob(class="form-control" + (" is-invalid" if form.dob.errors else ""), type="date") }}
+                            {% for error in form.dob.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold small">Gender <span class="text-danger">*</span></label>
+                            {{ form.gender(class="form-select") }}
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold small">Blood Group</label>
+                            {{ form.blood_group(class="form-select") }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contact & Residential Details -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light">
+                    <span class="fw-bold text-dark"><i class="bi bi-geo-alt me-2 text-primary"></i>2. Contact & Address Details</span>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold small">Primary Phone Number <span class="text-danger">*</span></label>
+                            {{ form.phone(class="form-control" + (" is-invalid" if form.phone.errors else ""), placeholder="+1 (555) 000-0000") }}
+                            {% for error in form.phone.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold small">Email Address</label>
+                            {{ form.email(class="form-control", placeholder="john.doe@example.com") }}
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label fw-semibold small">Street Address <span class="text-danger">*</span></label>
+                            {{ form.address(class="form-control" + (" is-invalid" if form.address.errors else ""), rows=2, placeholder="Street name, apartment, building...") }}
+                            {% for error in form.address.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold small">City</label>
+                            {{ form.city(class="form-control", placeholder="e.g. New York") }}
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold small">State / Province</label>
+                            {{ form.state(class="form-control", placeholder="e.g. NY") }}
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold small">Postal / Zip Code</label>
+                            {{ form.zip_code(class="form-control", placeholder="10001") }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Emergency Contact -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light">
+                    <span class="fw-bold text-dark"><i class="bi bi-telephone-plus me-2 text-danger"></i>3. Emergency Contact Details</span>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold small">Contact Person Name</label>
+                            {{ form.emergency_contact_name(class="form-control", placeholder="e.g. Jane Doe") }}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold small">Emergency Contact Phone</label>
+                            {{ form.emergency_contact_phone(class="form-control", placeholder="+1 (555) 111-2222") }}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold small">Relationship</label>
+                            {{ form.emergency_contact_relation(class="form-control", placeholder="Spouse / Parent / Sibling") }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Clinical Baseline & Hospital Assignments -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light">
+                    <span class="fw-bold text-dark"><i class="bi bi-clipboard2-pulse me-2 text-success"></i>4. Clinical Background & Hospital Assignments</span>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold small">Assigned Department</label>
+                            {{ form.department_id(class="form-select") }}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold small">Primary Attending Doctor</label>
+                            {{ form.primary_doctor_id(class="form-select") }}
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold small">Allergies (Drugs, Food, Latex)</label>
+                            {{ form.allergies(class="form-control", rows=2, placeholder="e.g. Penicillin, Peanuts (or 'None Known')") }}
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold small">Existing Chronic Conditions</label>
+                            {{ form.existing_conditions(class="form-control", rows=2, placeholder="e.g. Type 2 Diabetes, Hypertension") }}
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold small">Past Medical / Surgical History</label>
+                            {{ form.medical_history(class="form-control", rows=2, placeholder="e.g. Appendectomy in 2018") }}
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold small">Patient Account Status</label>
+                            {{ form.status(class="form-select") }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-end gap-2 mb-5">
+                <a href="{{ url_for('patients.index') }}" class="btn btn-light px-4">Cancel</a>
+                <button type="submit" class="btn btn-primary px-4 py-2 fw-semibold">
+                    <i class="bi bi-check2-circle me-1"></i>Save Patient Record
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

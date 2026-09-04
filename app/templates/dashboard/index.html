@@ -1,0 +1,432 @@
+{% extends "base.html" %}
+{% block title %}Executive Clinical & Administration Dashboard{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold mb-1 text-dark">
+            <i class="bi bi-speedometer2 text-primary me-2"></i>Hospital Executive Dashboard
+        </h4>
+        <div class="text-muted small">Real-time overview of clinical, inpatient, laboratory, and financial metrics</div>
+    </div>
+    <div class="d-flex gap-2">
+        {% if current_user.role_name in ['Super Admin', 'Hospital Admin', 'Receptionist', 'Doctor'] %}
+        <a href="{{ url_for('patients.create') }}" class="btn btn-primary btn-sm">
+            <i class="bi bi-person-plus-fill me-1"></i>New Patient
+        </a>
+        <a href="{{ url_for('appointments.book') }}" class="btn btn-outline-primary btn-sm">
+            <i class="bi bi-calendar-plus me-1"></i>Book Appointment
+        </a>
+        {% endif %}
+        {% if current_user.role_name in ['Super Admin', 'Hospital Admin', 'Accountant'] %}
+        <a href="{{ url_for('billing.create') }}" class="btn btn-outline-success btn-sm">
+            <i class="bi bi-receipt me-1"></i>Create Invoice
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Doctor Specific Welcome Banner -->
+{% if current_user.role_name == 'Doctor' and doctor_data.get('doctor') %}
+<div class="card border-0 bg-primary text-white shadow-sm mb-4">
+    <div class="card-body p-4 d-flex justify-content-between align-items-center">
+        <div>
+            <h5 class="fw-bold mb-1"><i class="bi bi-person-badge me-2"></i>Welcome, Dr. {{ doctor_data.doctor.name }}!</h5>
+            <div class="text-light small">{{ doctor_data.doctor.specialization }} • Department: {{ doctor_data.doctor.department.name }} • Consultation Fee: {{ doctor_data.doctor.consultation_fee | currency }}</div>
+        </div>
+        <div class="d-flex gap-3 text-center">
+            <div class="bg-white bg-opacity-25 px-3 py-2 rounded">
+                <div class="fs-4 fw-bold">{{ doctor_data.my_today_appointments | length }}</div>
+                <div class="small">Today's Visits</div>
+            </div>
+            <div class="bg-white bg-opacity-25 px-3 py-2 rounded">
+                <div class="fs-4 fw-bold">{{ doctor_data.my_admitted_patients }}</div>
+                <div class="small">Inpatients</div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Key Performance Metric Cards -->
+<div class="row g-3 mb-4">
+    <!-- Total Patients -->
+    <div class="col-sm-6 col-xl-3">
+        <div class="metric-card">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <div class="metric-label">Total Patients</div>
+                    <div class="metric-value">{{ stats.total_patients }}</div>
+                </div>
+                <div class="icon-wrapper bg-primary bg-opacity-10 text-primary">
+                    <i class="bi bi-people-fill"></i>
+                </div>
+            </div>
+            <div class="mt-2 text-muted small d-flex justify-content-between">
+                <span>Active Registered Patients</span>
+                <a href="{{ url_for('patients.index') }}" class="text-decoration-none">View All <i class="bi bi-arrow-right"></i></a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Today's Appointments -->
+    <div class="col-sm-6 col-xl-3">
+        <div class="metric-card">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <div class="metric-label">Today's Appointments</div>
+                    <div class="metric-value">{{ stats.today_appointments }}</div>
+                </div>
+                <div class="icon-wrapper bg-info bg-opacity-10 text-info">
+                    <i class="bi bi-calendar2-check-fill"></i>
+                </div>
+            </div>
+            <div class="mt-2 text-muted small d-flex justify-content-between">
+                <span>{{ stats.pending_appointments }} Pending Visits</span>
+                <a href="{{ url_for('appointments.index') }}" class="text-decoration-none">Agenda <i class="bi bi-arrow-right"></i></a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Inpatient Bed Occupancy -->
+    <div class="col-sm-6 col-xl-3">
+        <div class="metric-card">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <div class="metric-label">Bed Occupancy</div>
+                    <div class="metric-value">{{ stats.occupied_beds }}/{{ stats.total_beds }}</div>
+                </div>
+                <div class="icon-wrapper bg-danger bg-opacity-10 text-danger">
+                    <i class="bi bi-hospital"></i>
+                </div>
+            </div>
+            <div class="mt-2 text-muted small d-flex justify-content-between">
+                <span>{{ stats.bed_occupancy_rate }}% Occupied ({{ stats.available_beds }} Avail)</span>
+                <a href="{{ url_for('rooms_beds.index') }}" class="text-decoration-none">Matrix <i class="bi bi-arrow-right"></i></a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Today's Revenue -->
+    <div class="col-sm-6 col-xl-3">
+        <div class="metric-card">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <div class="metric-label">Today's Collections</div>
+                    <div class="metric-value text-success">{{ stats.today_revenue }}</div>
+                </div>
+                <div class="icon-wrapper bg-success bg-opacity-10 text-success">
+                    <i class="bi bi-cash-stack"></i>
+                </div>
+            </div>
+            <div class="mt-2 text-muted small d-flex justify-content-between">
+                <span>{{ stats.pending_invoices_amount }} Outstanding</span>
+                <a href="{{ url_for('billing.index') }}" class="text-decoration-none">Billing <i class="bi bi-arrow-right"></i></a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Secondary Metrics Row -->
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-md-3">
+        <div class="card p-3 shadow-sm mb-0">
+            <div class="d-flex align-items-center">
+                <div class="p-2 rounded bg-primary bg-opacity-10 text-primary me-3 fs-4"><i class="bi bi-person-badge"></i></div>
+                <div>
+                    <div class="fw-bold fs-5">{{ stats.available_doctors }}/{{ stats.total_doctors }}</div>
+                    <div class="text-muted small">Doctors on Duty</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-md-3">
+        <div class="card p-3 shadow-sm mb-0">
+            <div class="d-flex align-items-center">
+                <div class="p-2 rounded bg-warning bg-opacity-10 text-warning me-3 fs-4"><i class="bi bi-radioactive"></i></div>
+                <div>
+                    <div class="fw-bold fs-5">{{ stats.pending_lab_tests }}</div>
+                    <div class="text-muted small">Pending Lab Orders</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-md-3">
+        <div class="card p-3 shadow-sm mb-0">
+            <div class="d-flex align-items-center">
+                <div class="p-2 rounded bg-danger bg-opacity-10 text-danger me-3 fs-4"><i class="bi bi-capsule"></i></div>
+                <div>
+                    <div class="fw-bold fs-5">{{ stats.low_stock_count }}</div>
+                    <div class="text-muted small">Low Stock Medicines</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-md-3">
+        <div class="card p-3 shadow-sm mb-0">
+            <div class="d-flex align-items-center">
+                <div class="p-2 rounded bg-secondary bg-opacity-10 text-secondary me-3 fs-4"><i class="bi bi-exclamation-octagon"></i></div>
+                <div>
+                    <div class="fw-bold fs-5">{{ stats.expired_meds_count }}</div>
+                    <div class="text-muted small">Expired Medicines</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Section -->
+<div class="row g-3 mb-4">
+    <!-- Revenue Trend Chart -->
+    <div class="col-lg-8">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <span class="fw-bold text-dark"><i class="bi bi-graph-up text-primary me-2"></i>Hospital Revenue Growth (Monthly)</span>
+                <span class="badge bg-light text-secondary border">6 Months</span>
+            </div>
+            <div class="card-body">
+                <div style="height: 280px;">
+                    <canvas id="revenueChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Department Distribution Doughnut -->
+    <div class="col-lg-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <span class="fw-bold text-dark"><i class="bi bi-pie-chart text-info me-2"></i>Department Caseload</span>
+            </div>
+            <div class="card-body">
+                <div style="height: 280px;">
+                    <canvas id="departmentChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <!-- Patient Registrations Trend -->
+    <div class="col-lg-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <span class="fw-bold text-dark"><i class="bi bi-bar-chart-line text-success me-2"></i>Patient Intake Registrations</span>
+                <span class="badge bg-light text-secondary border">Monthly Trend</span>
+            </div>
+            <div class="card-body">
+                <div style="height: 240px;">
+                    <canvas id="patientTrendChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bed Occupancy & Appointment Breakdown -->
+    <div class="col-lg-3">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-white">
+                <span class="fw-bold text-dark"><i class="bi bi-hospital text-danger me-2"></i>Bed Status</span>
+            </div>
+            <div class="card-body">
+                <div style="height: 240px;">
+                    <canvas id="bedOccupancyChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-white">
+                <span class="fw-bold text-dark"><i class="bi bi-calendar-check text-warning me-2"></i>Appointments</span>
+            </div>
+            <div class="card-body">
+                <div style="height: 240px;">
+                    <canvas id="appointmentStatusChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Detailed Data Tables Row -->
+<div class="row g-3">
+    <!-- Today's Appointments Table -->
+    <div class="col-lg-6">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <span class="fw-bold text-dark"><i class="bi bi-clock-history text-primary me-2"></i>Today's Scheduled Consultations</span>
+                <a href="{{ url_for('appointments.index', date='today') }}" class="btn btn-sm btn-link text-decoration-none">View All</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Patient</th>
+                            <th>Doctor</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for apt in today_appointments %}
+                        <tr>
+                            <td><span class="badge bg-light text-dark border">{{ apt.appointment_time }}</span></td>
+                            <td>
+                                <a href="{{ url_for('patients.view_profile', patient_id=apt.patient_id) }}" class="fw-bold text-decoration-none text-dark">
+                                    {{ apt.patient.full_name }}
+                                </a>
+                                <div class="text-muted small">{{ apt.patient.phone }}</div>
+                            </td>
+                            <td>{{ apt.doctor.name }}</td>
+                            <td>
+                                <span class="badge {{ apt.status | status_badge }}">{{ apt.status }}</span>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="4" class="text-center py-4 text-muted">No appointments scheduled for today.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Patients -->
+    <div class="col-lg-6">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <span class="fw-bold text-dark"><i class="bi bi-person-plus text-success me-2"></i>Recently Registered Patients</span>
+                <a href="{{ url_for('patients.index') }}" class="btn btn-sm btn-link text-decoration-none">View All</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Patient ID</th>
+                            <th>Name</th>
+                            <th>Gender / Age</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for pat in recent_patients %}
+                        <tr>
+                            <td><code>{{ pat.patient_id }}</code></td>
+                            <td>
+                                <a href="{{ url_for('patients.view_profile', patient_id=pat.id) }}" class="fw-bold text-decoration-none text-dark">
+                                    {{ pat.full_name }}
+                                </a>
+                            </td>
+                            <td>{{ pat.gender }}, {{ pat.age }} yrs</td>
+                            <td>
+                                <span class="badge {{ pat.status | status_badge }}">{{ pat.status }}</span>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="4" class="text-center py-4 text-muted">No patients registered.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Low Stock & Audit Logs Row -->
+<div class="row g-3 mt-1">
+    <!-- Low Stock Medicines -->
+    <div class="col-lg-6">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <span class="fw-bold text-dark"><i class="bi bi-exclamation-triangle text-danger me-2"></i>Low Stock Pharmaceuticals</span>
+                <a href="{{ url_for('pharmacy.index', filter='low') }}" class="btn btn-sm btn-link text-decoration-none">Manage Pharmacy</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Medicine</th>
+                            <th>Batch #</th>
+                            <th>Available Stock</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for med in low_stock_medicines %}
+                        <tr>
+                            <td>
+                                <div class="fw-bold">{{ med.name }}</div>
+                                <div class="text-muted small">{{ med.generic_name }}</div>
+                            </td>
+                            <td><code>{{ med.batch_number }}</code></td>
+                            <td>
+                                <span class="badge bg-danger">{{ med.quantity_in_stock }} in stock</span>
+                                <div class="text-muted small">Threshold: {{ med.minimum_stock_alert }}</div>
+                            </td>
+                            <td>
+                                <a href="{{ url_for('pharmacy.adjust_stock', med_id=med.id) }}" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-plus-circle me-1"></i>Restock
+                                </a>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="4" class="text-center py-3 text-muted">All medicine stock levels are healthy.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Audit Logs -->
+    <div class="col-lg-6">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <span class="fw-bold text-dark"><i class="bi bi-shield-check text-secondary me-2"></i>Recent Hospital Audit Trail</span>
+                {% if current_user.role_name == 'Super Admin' %}
+                <a href="{{ url_for('audit.index') }}" class="btn btn-sm btn-link text-decoration-none">Audit Logs</a>
+                {% endif %}
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Module</th>
+                            <th>Action</th>
+                            <th>Description</th>
+                            <th>Time</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in recent_audit_logs %}
+                        <tr>
+                            <td><span class="badge bg-light text-dark border">{{ log.module }}</span></td>
+                            <td><code>{{ log.action }}</code></td>
+                            <td class="small text-truncate" style="max-width: 200px;" title="{{ log.description }}">{{ log.description }}</td>
+                            <td class="small text-muted">{{ log.created_at | format_datetime }}</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="4" class="text-center py-3 text-muted">No audit logs recorded.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/dashboard-charts.js') }}"></script>
+{% endblock %}

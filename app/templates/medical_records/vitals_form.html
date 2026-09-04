@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="d-flex align-items-center justify-content-between mb-4">
+            <div>
+                <h4 class="fw-bold mb-0 text-dark"><i class="bi bi-heart-pulse-fill me-2 text-danger"></i>{{ title }}</h4>
+                <div class="text-muted small">Record and monitor patient physiological parameters</div>
+            </div>
+            <a href="{{ url_for('patients.index') }}" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-arrow-left me-1"></i>Back
+            </a>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+                <form method="POST">
+                    {{ form.hidden_tag() }}
+
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label fw-semibold small">Patient <span class="text-danger">*</span></label>
+                            {{ form.patient_id(class="form-select") }}
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold small">Body Temperature (°F)</label>
+                            {{ form.temperature(class="form-control", placeholder="e.g. 98.6") }}
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold small">BP Systolic (mmHg)</label>
+                            {{ form.bp_systolic(class="form-control", placeholder="e.g. 120") }}
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold small">BP Diastolic (mmHg)</label>
+                            {{ form.bp_diastolic(class="form-control", placeholder="e.g. 80") }}
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold small">Heart Rate / Pulse (bpm)</label>
+                            {{ form.heart_rate(class="form-control", placeholder="e.g. 72") }}
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold small">Respiratory Rate (breaths/min)</label>
+                            {{ form.respiratory_rate(class="form-control", placeholder="e.g. 16") }}
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold small">Oxygen Saturation - SpO2 (%)</label>
+                            {{ form.spo2(class="form-control", placeholder="e.g. 98") }}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold small">Weight (kg)</label>
+                            {{ form.weight_kg(class="form-control", placeholder="e.g. 70.5") }}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold small">Height (cm)</label>
+                            {{ form.height_cm(class="form-control", placeholder="e.g. 175") }}
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label fw-semibold small">Nursing / Triage Observations</label>
+                            {{ form.notes(class="form-control", placeholder="Patient comfortable, resting in bed, no distress...") }}
+                        </div>
+                    </div>
+
+                    <div class="mt-4 pt-3 border-top text-end">
+                        <button type="submit" class="btn btn-danger px-4 fw-semibold">
+                            <i class="bi bi-check-lg me-1"></i>Save Patient Vitals
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

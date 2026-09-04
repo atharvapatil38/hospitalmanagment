@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block title %}Inpatient Admissions & Discharges{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold mb-0 text-dark"><i class="bi bi-box-arrow-in-right me-2 text-primary"></i>Inpatient Admissions & Ward Stays</h4>
+        <div class="text-muted small">Manage hospitalizations, ward bed allocations, transfers, and medical discharge summaries</div>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('rooms_beds.index') }}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-grid-3x3-gap-fill me-1"></i>Bed Matrix
+        </a>
+        <a href="{{ url_for('admissions.admit') }}" class="btn btn-danger btn-sm">
+            <i class="bi bi-hospital me-1"></i>Admit New Inpatient
+        </a>
+    </div>
+</div>
+
+<!-- Status Filter Pills -->
+<div class="card shadow-sm mb-4">
+    <div class="card-body p-3 d-flex justify-content-between align-items-center">
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('admissions.index', status='Admitted') }}" class="btn btn-sm {% if status_filter == 'Admitted' %}btn-primary{% else %}btn-outline-secondary{% endif %}">
+                <i class="bi bi-person-check me-1"></i>Currently Admitted ({{ active_count }})
+            </a>
+            <a href="{{ url_for('admissions.index', status='Discharged') }}" class="btn btn-sm {% if status_filter == 'Discharged' %}btn-primary{% else %}btn-outline-secondary{% endif %}">
+                <i class="bi bi-check2-circle me-1"></i>Discharged History ({{ discharged_count }})
+            </a>
+            <a href="{{ url_for('admissions.index', status='All') }}" class="btn btn-sm {% if status_filter == 'All' %}btn-primary{% else %}btn-outline-secondary{% endif %}">
+                All Records
+            </a>
+        </div>
+        <form method="GET" class="d-flex gap-2" style="width: 300px;">
+            <input type="hidden" name="status" value="{{ status_filter }}">
+            <div class="input-group input-group-sm">
+                <input type="text" name="search" class="form-control" placeholder="Search patient or Ref #..." value="{{ search }}">
+                <button type="submit" class="btn btn-primary"><i class="bi bi-search"></i></button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Admissions Table -->
+<div class="card shadow-sm">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>Admission ID</th>
+                    <th>Patient Name</th>
+                    <th>Room & Bed</th>
+                    <th>Doctor</th>
+                    <th>Admission Date</th>
+                    <th>Discharge Date</th>
+                    <th>Stay (Days)</th>
+                    <th>Status</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for adm in admissions %}
+                <tr>
+                    <td><code>{{ adm.admission_id }}</code></td>
+                    <td>
+                        <a href="{{ url_for('patients.view_profile', patient_id=adm.patient_id) }}" class="fw-bold text-dark text-decoration-none">
+                            {{ adm.patient.full_name }}
+                        </a>
+                        <div class="text-muted small">{{ adm.patient.gender }}, {{ adm.patient.age }} yrs</div>
+                    </td>
+                    <td>
+                        <span class="badge bg-light text-dark border">
+                            Room {{ adm.room.room_number }} • {{ adm.bed.bed_number }}
+                        </span>
+                        <div class="text-muted small">{{ adm.room.room_type }}</div>
+                    </td>
+                    <td>Dr. {{ adm.doctor.name }}</td>
+                    <td>{{ adm.admission_date | format_datetime }}</td>
+                    <td>{{ adm.discharge_date | format_datetime if adm.discharge_date else '—' }}</td>
+                    <td><span class="badge bg-light text-secondary border">{{ adm.length_of_stay_days }} days</span></td>
+                    <td><span class="badge {{ adm.status | status_badge }}">{{ adm.status }}</span></td>
+                    <td class="text-end">
+                        {% if adm.status == 'Admitted' %}
+                        <div class="btn-group btn-group-sm">
+                            <a href="{{ url_for('admissions.transfer_bed', adm_id=adm.id) }}" class="btn btn-outline-secondary" title="Transfer Bed">
+                                <i class="bi bi-arrow-left-right"></i> Transfer
+                            </a>
+                            <a href="{{ url_for('admissions.discharge', adm_id=adm.id) }}" class="btn btn-outline-danger" title="Discharge Patient">
+                                <i class="bi bi-box-arrow-right"></i> Discharge
+                            </a>
+                        </div>
+                        {% else %}
+                        <a href="{{ url_for('admissions.view_summary', adm_id=adm.id) }}" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-file-text me-1"></i>Summary
+                        </a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="9" class="text-center py-4 text-muted">No inpatient admissions found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

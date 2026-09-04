@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+{% block title %}Invoice {{ invoice.invoice_number }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 no-print">
+    <div>
+        <h4 class="fw-bold mb-0 text-dark"><i class="bi bi-receipt-cutoff me-2 text-primary"></i>Official Invoice Receipt</h4>
+        <div class="text-muted small">Ref: <code>{{ invoice.invoice_number }}</code> • Status: {{ invoice.payment_status }}</div>
+    </div>
+    <div class="d-flex gap-2">
+        <button onclick="window.print()" class="btn btn-primary btn-sm">
+            <i class="bi bi-printer-fill me-1"></i>Print Invoice
+        </button>
+        <a href="{{ url_for('billing.view_invoice', inv_id=invoice.id) }}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left me-1"></i>Back
+        </a>
+    </div>
+</div>
+
+<div class="print-sheet shadow-sm">
+    <!-- Header -->
+    <div class="print-header d-flex justify-content-between align-items-start pb-3 mb-3 border-bottom">
+        <div>
+            <h3 class="fw-bold text-primary mb-0"><i class="bi bi-hospital-fill me-2"></i>{{ hospital_name }}</h3>
+            <div class="text-muted small">{{ hospital_address }}</div>
+            <div class="text-muted small">Helpline: {{ hospital_phone }} • Email: {{ hospital_email }}</div>
+        </div>
+        <div class="text-end">
+            <h4 class="fw-bold text-dark text-uppercase mb-0">TAX INVOICE</h4>
+            <div class="badge bg-light text-dark border font-monospace mt-1">INV: {{ invoice.invoice_number }}</div>
+            <div class="text-muted small mt-1">Date: {{ invoice.invoice_date | format_date }}</div>
+            <div class="badge {% if invoice.payment_status == 'Paid' %}bg-success{% elif invoice.payment_status == 'Partially Paid' %}bg-warning text-dark{% else %}bg-danger{% endif %} mt-1">
+                {{ invoice.payment_status }}
+            </div>
+        </div>
+    </div>
+
+    <!-- Patient Details -->
+    <div class="row g-2 p-3 bg-light rounded mb-4" style="font-size: 0.9rem;">
+        <div class="col-6">
+            <div><span class="text-muted">Billed To:</span> <strong>{{ invoice.patient.full_name }}</strong></div>
+            <div><span class="text-muted">Patient ID:</span> <code>{{ invoice.patient.patient_id }}</code></div>
+            <div><span class="text-muted">Phone:</span> {{ invoice.patient.phone }}</div>
+            <div><span class="text-muted">Address:</span> {{ invoice.patient.address }}</div>
+        </div>
+        <div class="col-6 text-end">
+            <div><span class="text-muted">Billing Category:</span> <strong>{{ invoice.billing_type }}</strong></div>
+            {% if invoice.admission %}
+            <div><span class="text-muted">Inpatient Stay:</span> Room {{ invoice.admission.room.room_number }} ({{ invoice.admission.length_of_stay_days }} days)</div>
+            {% endif %}
+            <div><span class="text-muted">Prepared By:</span> {{ invoice.created_by or 'Billing Desk' }}</div>
+        </div>
+    </div>
+
+    <!-- Line Items Table -->
+    <table class="table table-bordered align-middle mb-4">
+        <thead class="table-light">
+            <tr>
+                <th style="width: 5%;">#</th>
+                <th style="width: 20%;">Category</th>
+                <th style="width: 45%;">Service / Item Description</th>
+                <th style="width: 10%;" class="text-center">Qty</th>
+                <th style="width: 10%;" class="text-end">Unit Price</th>
+                <th style="width: 10%;" class="text-end">Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in invoice.items %}
+            <tr>
+                <td>{{ loop.index }}</td>
+                <td><span class="badge bg-light text-dark border">{{ item.item_type }}</span></td>
+                <td class="fw-semibold">{{ item.item_name }}</td>
+                <td class="text-center">{{ item.quantity }}</td>
+                <td class="text-end">{{ item.unit_price | currency }}</td>
+                <td class="text-end fw-bold">{{ item.total_price | currency }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Totals Summary -->
+    <div class="row justify-content-end mb-4">
+        <div class="col-6">
+            <table class="table table-sm table-borderless">
+                <tr>
+                    <td class="text-muted">Subtotal:</td>
+                    <td class="text-end fw-semibold">{{ invoice.subtotal | currency }}</td>
+                </tr>
+                {% if invoice.discount_amount > 0 %}
+                <tr class="text-danger">
+                    <td>Discount ({{ invoice.discount_value }}{% if invoice.discount_type == 'Percentage' %}%{% endif %}):</td>
+                    <td class="text-end">-{{ invoice.discount_amount | currency }}</td>
+                </tr>
+                {% endif %}
+                <tr>
+                    <td class="text-muted">Tax / VAT ({{ invoice.tax_rate }}%):</td>
+                    <td class="text-end fw-semibold">{{ invoice.tax_amount | currency }}</td>
+                </tr>
+                <tr class="border-top fs-5">
+                    <td class="fw-bold text-dark">Grand Total:</td>
+                    <td class="text-end fw-bold text-primary">{{ invoice.grand_total | currency }}</td>
+                </tr>
+                <tr class="text-success">
+                    <td>Amount Paid:</td>
+                    <td class="text-end fw-bold">{{ invoice.paid_amount | currency }}</td>
+                </tr>
+                <tr class="text-danger fs-6 border-top">
+                    <td class="fw-bold">Balance Due:</td>
+                    <td class="text-end fw-bold">{{ invoice.balance_due | currency }}</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <!-- Payments Made -->
+    {% if invoice.payments.count() > 0 %}
+    <div class="mb-4">
+        <h6 class="fw-bold text-primary border-bottom pb-1 mb-2">Payment Receipts Applied</h6>
+        <table class="table table-sm table-bordered">
+            <thead class="table-light">
+                <tr>
+                    <th>Receipt Code</th>
+                    <th>Date</th>
+                    <th>Payment Method</th>
+                    <th>Ref #</th>
+                    <th class="text-end">Amount Settled</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in invoice.payments %}
+                <tr>
+                    <td><code>{{ p.payment_code }}</code></td>
+                    <td>{{ p.payment_date | format_datetime }}</td>
+                    <td>{{ p.payment_method }}</td>
+                    <td>{{ p.transaction_reference or '—' }}</td>
+                    <td class="text-end text-success fw-bold">{{ p.amount | currency }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    <!-- Footer Stamp -->
+    <div class="row mt-5 pt-4">
+        <div class="col-6 text-muted small">
+            <div>* Computer generated official tax invoice.</div>
+            <div>* For billing disputes or insurance claims, present this copy.</div>
+        </div>
+        <div class="col-6 text-end">
+            <div class="border-top border-dark d-inline-block pt-2" style="width: 200px;">
+                <div class="fw-bold text-dark">Accounts Department</div>
+                <div class="text-muted small">Authorized Billing Officer</div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

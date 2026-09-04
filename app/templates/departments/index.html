@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Medical Departments{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold mb-0 text-dark"><i class="bi bi-diagram-3-fill me-2 text-primary"></i>Hospital Medical Departments</h4>
+        <div class="text-muted small">Specialized clinical divisions, department heads, and personnel</div>
+    </div>
+    {% if current_user.role_name in ['Super Admin', 'Hospital Admin'] %}
+    <a href="{{ url_for('departments.create') }}" class="btn btn-primary btn-sm">
+        <i class="bi bi-plus-lg me-1"></i>Add Department
+    </a>
+    {% endif %}
+</div>
+
+<!-- Department Cards Grid -->
+<div class="row g-3">
+    {% for dept in departments %}
+    <div class="col-md-6 col-lg-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <h5 class="fw-bold text-dark mb-0">{{ dept.name }}</h5>
+                    <span class="badge bg-light text-primary border font-monospace">{{ dept.code }}</span>
+                </div>
+                <div class="text-muted small mb-3">{{ dept.description or 'Specialized healthcare and clinical diagnosis services.' }}</div>
+
+                <div class="bg-light p-3 rounded small mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="text-muted">Head of Dept (HOD):</span>
+                        <span class="fw-bold text-dark">{{ dept.head_doctor_name or 'Dr. Senior Consultant' }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="text-muted">Phone Extension:</span>
+                        <span>{{ dept.phone or 'Ext 101' }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted">Specialist Doctors:</span>
+                        <span class="badge bg-primary rounded-pill">{{ dept.doctors.count() }} Doctors</span>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center pt-2 border-top">
+                    <span class="badge {{ dept.status | status_badge }}">{{ dept.status }}</span>
+                    <div class="btn-group btn-group-sm">
+                        <a href="{{ url_for('departments.view_detail', dept_id=dept.id) }}" class="btn btn-outline-primary">View Details</a>
+                        {% if current_user.role_name in ['Super Admin', 'Hospital Admin'] %}
+                        <a href="{{ url_for('departments.edit', dept_id=dept.id) }}" class="btn btn-outline-secondary"><i class="bi bi-pencil"></i></a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

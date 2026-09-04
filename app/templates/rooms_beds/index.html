@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+{% block title %}Hospital Bed Occupancy Matrix{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold mb-0 text-dark"><i class="bi bi-grid-3x3-gap-fill me-2 text-primary"></i>Visual Inpatient Bed Matrix</h4>
+        <div class="text-muted small">Real-time floor grid, room capacity, bed occupancy tracking, and maintenance status</div>
+    </div>
+    <div class="d-flex gap-2">
+        {% if current_user.role_name in ['Super Admin', 'Hospital Admin'] %}
+        <a href="{{ url_for('rooms_beds.create_room') }}" class="btn btn-primary btn-sm">
+            <i class="bi bi-plus-lg me-1"></i>Add New Room / Ward
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Bed Status KPI Summary Bar -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="card p-3 shadow-sm border-start border-4 border-success mb-0">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="text-muted small fw-bold text-uppercase">Available Beds</div>
+                    <div class="fs-4 fw-bold text-success">{{ available_beds }}</div>
+                </div>
+                <i class="bi bi-check-circle-fill fs-2 text-success opacity-50"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card p-3 shadow-sm border-start border-4 border-danger mb-0">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="text-muted small fw-bold text-uppercase">Occupied Beds</div>
+                    <div class="fs-4 fw-bold text-danger">{{ occupied_beds }}</div>
+                </div>
+                <i class="bi bi-hospital fs-2 text-danger opacity-50"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card p-3 shadow-sm border-start border-4 border-warning mb-0">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="text-muted small fw-bold text-uppercase">Reserved Beds</div>
+                    <div class="fs-4 fw-bold text-warning">{{ reserved_beds }}</div>
+                </div>
+                <i class="bi bi-clock-history fs-2 text-warning opacity-50"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card p-3 shadow-sm border-start border-4 border-secondary mb-0">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="text-muted small fw-bold text-uppercase">Maintenance / Cleaning</div>
+                    <div class="fs-4 fw-bold text-secondary">{{ maintenance_beds }}</div>
+                </div>
+                <i class="bi bi-tools fs-2 text-secondary opacity-50"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bed Matrix by Rooms -->
+{% for room in rooms %}
+<div class="ward-card shadow-sm">
+    <div class="d-flex justify-content-between align-items-center pb-2 border-bottom">
+        <div>
+            <h5 class="fw-bold mb-0 text-dark">
+                <i class="bi bi-door-open-fill text-primary me-2"></i>Room {{ room.room_number }}
+                <span class="badge bg-light text-primary border font-monospace ms-2">{{ room.room_type }}</span>
+            </h5>
+            <span class="text-muted small">{{ room.floor }} • Standard Rate: {{ room.daily_charge | currency }}/day</span>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <span class="badge {% if room.available_beds_count > 0 %}bg-success{% else %}bg-danger{% endif %}">
+                {{ room.available_beds_count }}/{{ room.total_beds }} Beds Available
+            </span>
+            {% if current_user.role_name in ['Super Admin', 'Hospital Admin'] %}
+            <!-- Add Bed to Room Modal Trigger -->
+            <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#addBedModal{{ room.id }}">
+                <i class="bi bi-plus-circle me-1"></i>Add Bed
+            </button>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Bed Grid for this Room -->
+    <div class="bed-grid">
+        {% for bed in room.beds %}
+        <div class="bed-tile {% if bed.status == 'Available' %}bed-available{% elif bed.status == 'Occupied' %}bed-occupied{% elif bed.status == 'Reserved' %}bed-reserved{% else %}bed-maintenance{% endif %}" data-bs-toggle="dropdown">
+            <div class="bed-icon"><i class="bi bi-hospital"></i></div>
+            <div class="bed-number">{{ bed.bed_number }}</div>
+            
+            {% set active_adm = bed.admissions.filter_by(status='Admitted').first() %}
+            {% if bed.status == 'Occupied' and active_adm %}
+                <div class="bed-patient" title="{{ active_adm.patient.full_name }}">{{ active_adm.patient.full_name }}</div>
+                <div class="badge bg-danger bg-opacity-75 text-white mt-1" style="font-size: 0.65rem;">{{ active_adm.length_of_stay_days }}d Stay</div>
+            {% else %}
+                <div class="badge bg-transparent border mt-1" style="font-size: 0.65rem;">{{ bed.status }}</div>
+            {% endif %}
+        </div>
+
+        <!-- Bed Action Dropdown Menu -->
+        <ul class="dropdown-menu shadow-sm">
+            <li class="dropdown-header"><strong>{{ room.room_number }} - {{ bed.bed_number }}</strong> ({{ bed.status }})</li>
+            {% if bed.status == 'Available' %}
+                <li>
+                    <a class="dropdown-item text-danger" href="{{ url_for('admissions.admit') }}"><i class="bi bi-box-arrow-in-right me-2"></i>Admit Patient Here</a>
+                </li>
+                <li>
+                    <form method="POST" action="{{ url_for('rooms_beds.update_bed_status', bed_id=bed.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="status" value="Maintenance">
+                        <button class="dropdown-item text-secondary" type="submit"><i class="bi bi-tools me-2"></i>Mark Maintenance</button>
+                    </form>
+                </li>
+                <li>
+                    <form method="POST" action="{{ url_for('rooms_beds.update_bed_status', bed_id=bed.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="status" value="Reserved">
+                        <button class="dropdown-item text-warning" type="submit"><i class="bi bi-clock me-2"></i>Reserve Bed</button>
+                    </form>
+                </li>
+            {% elif bed.status == 'Occupied' and active_adm %}
+                <li>
+                    <a class="dropdown-item" href="{{ url_for('patients.view_profile', patient_id=active_adm.patient_id) }}"><i class="bi bi-person me-2"></i>View Patient Profile</a>
+                </li>
+                <li>
+                    <a class="dropdown-item text-primary" href="{{ url_for('admissions.transfer_bed', adm_id=active_adm.id) }}"><i class="bi bi-arrow-left-right me-2"></i>Transfer Bed</a>
+                </li>
+                <li>
+                    <a class="dropdown-item text-danger" href="{{ url_for('admissions.discharge', adm_id=active_adm.id) }}"><i class="bi bi-box-arrow-right me-2"></i>Discharge Inpatient</a>
+                </li>
+            {% else %}
+                <li>
+                    <form method="POST" action="{{ url_for('rooms_beds.update_bed_status', bed_id=bed.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="status" value="Available">
+                        <button class="dropdown-item text-success" type="submit"><i class="bi bi-check-circle me-2"></i>Mark Available</button>
+                    </form>
+                </li>
+            {% endif %}
+        </ul>
+
+        <!-- Add Bed Modal -->
+        <div class="modal fade" id="addBedModal{{ room.id }}" tabindex="-1">
+            <div class="modal-dialog modal-sm">
+                <div class="modal-content">
+                    <form method="POST" action="{{ url_for('rooms_beds.add_bed', room_id=room.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <div class="modal-header">
+                            <h6 class="modal-title fw-bold">Add Bed to Room {{ room.room_number }}</h6>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <label class="form-label small fw-semibold">Bed Label</label>
+                            <input type="text" name="bed_number" class="form-control form-control-sm" placeholder="e.g. Bed D" required>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-sm btn-light" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-sm btn-primary">Add Bed</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% else %}
+<div class="card p-5 text-center text-muted">
+    <i class="bi bi-hospital fs-1 d-block mb-3"></i>
+    <h5>No Hospital Rooms Initialized</h5>
+    <p>Get started by creating wards and beds for patient admissions.</p>
+    <div>
+        <a href="{{ url_for('rooms_beds.create_room') }}" class="btn btn-primary">Create First Room</a>
+    </div>
+</div>
+{% endfor %}
+{% endblock %}

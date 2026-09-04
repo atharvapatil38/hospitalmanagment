@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block title %}Medical Consultation Records{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold mb-0 text-dark"><i class="bi bi-clipboard2-pulse-fill me-2 text-primary"></i>Clinical Consultation Records</h4>
+        <div class="text-muted small">Comprehensive outpatient encounters, clinical diagnoses, symptoms, and treatment plans</div>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('medical_records.record_vitals') }}" class="btn btn-outline-danger btn-sm">
+            <i class="bi bi-heart-pulse me-1"></i>Record Vitals
+        </a>
+        <a href="{{ url_for('medical_records.create') }}" class="btn btn-primary btn-sm">
+            <i class="bi bi-journal-plus me-1"></i>New Clinical Encounter
+        </a>
+    </div>
+</div>
+
+<!-- Search -->
+<div class="card shadow-sm mb-4">
+    <div class="card-body p-3">
+        <form method="GET" class="d-flex gap-2">
+            <div class="input-group input-group-sm">
+                <span class="input-group-text bg-light"><i class="bi bi-search"></i></span>
+                <input type="text" name="search" class="form-control" placeholder="Search by patient name, record ID, or clinical diagnosis..." value="{{ search }}">
+            </div>
+            <button type="submit" class="btn btn-sm btn-primary">Search</button>
+            <a href="{{ url_for('medical_records.index') }}" class="btn btn-sm btn-outline-secondary">Reset</a>
+        </form>
+    </div>
+</div>
+
+<!-- Records List -->
+<div class="card shadow-sm">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>Record ID</th>
+                    <th>Visit Date</th>
+                    <th>Patient Name</th>
+                    <th>Consulting Doctor</th>
+                    <th>Diagnosis</th>
+                    <th>Symptoms</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for rec in records.items %}
+                <tr>
+                    <td><code>{{ rec.record_id }}</code></td>
+                    <td>{{ rec.visit_date | format_date }}</td>
+                    <td>
+                        <a href="{{ url_for('patients.view_profile', patient_id=rec.patient_id) }}" class="fw-bold text-dark text-decoration-none">
+                            {{ rec.patient.full_name }}
+                        </a>
+                        <div class="text-muted small">{{ rec.patient.gender }}, {{ rec.patient.age }} yrs</div>
+                    </td>
+                    <td>Dr. {{ rec.doctor.name }}</td>
+                    <td class="fw-semibold text-primary">{{ rec.diagnosis }}</td>
+                    <td class="small text-truncate" style="max-width: 220px;" title="{{ rec.symptoms }}">{{ rec.symptoms }}</td>
+                    <td class="text-end">
+                        <a href="{{ url_for('medical_records.view_record', record_id=rec.id) }}" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-eye"></i> View
+                        </a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" class="text-center py-4 text-muted">No medical consultation records found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if records.pages > 1 %}
+    <div class="card-footer bg-white border-top py-3 d-flex justify-content-between align-items-center">
+        <div class="small text-muted">Showing Page {{ records.page }} of {{ records.pages }}</div>
+        <ul class="pagination pagination-sm mb-0">
+            {% for p in records.iter_pages() %}
+                {% if p %}
+                    <li class="page-item {% if p == records.page %}active{% endif %}">
+                        <a class="page-link" href="{{ url_for('medical_records.index', page=p, search=search) }}">{{ p }}</a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link">…</span></li>
+                {% endif %}
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

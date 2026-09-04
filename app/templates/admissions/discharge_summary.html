@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block title %}Discharge Summary - {{ admission.patient.full_name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 no-print">
+    <div>
+        <h4 class="fw-bold mb-0 text-dark"><i class="bi bi-file-earmark-medical me-2 text-primary"></i>Medical Discharge Summary</h4>
+        <div class="text-muted small">Admission Ref: <code>{{ admission.admission_id }}</code></div>
+    </div>
+    <div class="d-flex gap-2">
+        <button onclick="window.print()" class="btn btn-primary btn-sm">
+            <i class="bi bi-printer-fill me-1"></i>Print Discharge Summary
+        </button>
+        <a href="{{ url_for('admissions.index') }}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left me-1"></i>Back to Admissions
+        </a>
+    </div>
+</div>
+
+<div class="print-sheet shadow-sm">
+    <!-- Header -->
+    <div class="print-header d-flex justify-content-between align-items-center">
+        <div>
+            <h3 class="fw-bold text-primary mb-0"><i class="bi bi-hospital-fill me-2"></i>{{ hospital_name }}</h3>
+            <div class="text-muted small">{{ hospital_address }}</div>
+            <div class="text-muted small">Helpline: {{ hospital_phone }} • Email: {{ hospital_email }}</div>
+        </div>
+        <div class="text-end">
+            <h5 class="fw-bold text-danger text-uppercase mb-0">Discharge Summary</h5>
+            <div class="badge bg-light text-dark border font-monospace mt-1">ADM: {{ admission.admission_id }}</div>
+        </div>
+    </div>
+
+    <!-- Patient Demographics & Admission Dates -->
+    <div class="row g-3 p-3 bg-light rounded mb-4" style="font-size: 0.9rem;">
+        <div class="col-6">
+            <div><span class="text-muted">Patient Name:</span> <strong>{{ admission.patient.full_name }}</strong></div>
+            <div><span class="text-muted">Patient ID:</span> <code>{{ admission.patient.patient_id }}</code></div>
+            <div><span class="text-muted">Age / Gender:</span> {{ admission.patient.age }} Years / {{ admission.patient.gender }}</div>
+            <div><span class="text-muted">Blood Group:</span> <strong>{{ admission.patient.blood_group or 'Unknown' }}</strong></div>
+        </div>
+        <div class="col-6">
+            <div><span class="text-muted">Admitted Date:</span> {{ admission.admission_date | format_datetime }}</div>
+            <div><span class="text-muted">Discharge Date:</span> {{ admission.discharge_date | format_datetime if admission.discharge_date else 'In Care' }}</div>
+            <div><span class="text-muted">Length of Stay:</span> {{ admission.length_of_stay_days }} Days</div>
+            <div><span class="text-muted">Department:</span> {{ admission.department.name }}</div>
+            <div><span class="text-muted">Attending Doctor:</span> Dr. {{ admission.doctor.name }}</div>
+        </div>
+    </div>
+
+    {% if summary %}
+    <!-- Clinical Information -->
+    <div class="mb-4">
+        <h6 class="fw-bold text-primary border-bottom pb-1 mb-2">1. REASON FOR ADMISSION</h6>
+        <p class="mb-0" style="font-size: 0.95rem;">{{ admission.reason_for_admission }}</p>
+    </div>
+
+    <div class="mb-4">
+        <h6 class="fw-bold text-primary border-bottom pb-1 mb-2">2. FINAL CLINICAL DIAGNOSIS</h6>
+        <p class="fw-bold text-dark mb-0" style="font-size: 0.95rem;">{{ summary.final_diagnosis }}</p>
+    </div>
+
+    <div class="mb-4">
+        <h6 class="fw-bold text-primary border-bottom pb-1 mb-2">3. HOSPITAL COURSE & TREATMENT SUMMARY</h6>
+        <p style="white-space: pre-line; font-size: 0.95rem;">{{ summary.treatment_summary }}</p>
+    </div>
+
+    <div class="mb-4">
+        <h6 class="fw-bold text-primary border-bottom pb-1 mb-2">4. CONDITION AT DISCHARGE</h6>
+        <span class="badge bg-success fs-6">{{ summary.condition_at_discharge }}</span>
+    </div>
+
+    {% if summary.discharge_medications %}
+    <div class="mb-4">
+        <h6 class="fw-bold text-primary border-bottom pb-1 mb-2">5. DISCHARGE MEDICATIONS</h6>
+        <div class="p-3 bg-light rounded border" style="white-space: pre-line; font-size: 0.9rem;">
+            {{ summary.discharge_medications }}
+        </div>
+    </div>
+    {% endif %}
+
+    {% if summary.advice_instructions %}
+    <div class="mb-4">
+        <h6 class="fw-bold text-primary border-bottom pb-1 mb-2">6. DIET & POST-DISCHARGE ADVICE</h6>
+        <p style="white-space: pre-line; font-size: 0.95rem;">{{ summary.advice_instructions }}</p>
+    </div>
+    {% endif %}
+
+    <div class="row mt-5 pt-4">
+        <div class="col-6">
+            {% if summary.follow_up_date %}
+            <div class="p-2 border rounded bg-light small">
+                <strong><i class="bi bi-calendar-event me-1"></i>Next Follow-up Review:</strong> {{ summary.follow_up_date | format_date }}
+            </div>
+            {% endif %}
+        </div>
+        <div class="col-6 text-end">
+            <div class="border-top border-dark d-inline-block pt-2" style="width: 220px;">
+                <div class="fw-bold text-dark">{{ summary.doctor_signature or ('Dr. ' + admission.doctor.name) }}</div>
+                <div class="text-muted small">Consultant Physician Signature</div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="text-center py-5 text-muted">
+        Discharge summary has not been drafted for this admission.
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

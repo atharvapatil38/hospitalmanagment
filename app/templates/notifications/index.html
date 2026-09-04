@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Hospital Notifications{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold mb-0 text-dark"><i class="bi bi-bell-fill me-2 text-primary"></i>System Notifications & Clinical Alerts</h4>
+        <div class="text-muted small">Real-time alerts for low pharmacy stocks, urgent lab results, admissions, and appointment notices</div>
+    </div>
+    <form method="POST" action="{{ url_for('notifications.mark_all_read') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn btn-outline-primary btn-sm">
+            <i class="bi bi-check2-all me-1"></i>Mark All Read
+        </button>
+    </form>
+</div>
+
+<div class="card shadow-sm">
+    <div class="list-group list-group-flush">
+        {% for notif in notifications %}
+        <div class="list-group-item p-3 d-flex align-items-center justify-content-between {% if not notif.is_read %}bg-light{% endif %}">
+            <div class="d-flex align-items-center">
+                <div class="rounded-circle p-2 me-3 {% if notif.notification_type == 'danger' %}bg-danger text-white{% elif notif.notification_type == 'warning' %}bg-warning text-dark{% elif notif.notification_type == 'success' %}bg-success text-white{% else %}bg-primary text-white{% endif %}">
+                    <i class="bi {% if notif.notification_type == 'danger' %}bi-exclamation-octagon{% elif notif.notification_type == 'warning' %}bi-exclamation-triangle{% else %}bi-info-circle{% endif %} fs-5"></i>
+                </div>
+                <div>
+                    <h6 class="fw-bold mb-1 text-dark">{{ notif.title }}</h6>
+                    <p class="text-secondary small mb-1">{{ notif.message }}</p>
+                    <span class="text-muted" style="font-size: 0.75rem;">{{ notif.created_at | format_datetime }}</span>
+                </div>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                {% if notif.link %}
+                <a href="{{ notif.link }}" class="btn btn-sm btn-outline-primary">View</a>
+                {% endif %}
+                {% if not notif.is_read %}
+                <form method="POST" action="{{ url_for('notifications.mark_read', notif_id=notif.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-sm btn-light border" title="Mark as read"><i class="bi bi-check"></i></button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+        {% else %}
+        <div class="text-center py-5 text-muted">
+            <i class="bi bi-bell-slash fs-1 d-block mb-2"></i>
+            You have no notifications.
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

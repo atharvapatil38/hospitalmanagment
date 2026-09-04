@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+{% block title %}{{ doctor.name }} - Doctor Profile{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <!-- Left Column: Doctor Card & Info -->
+    <div class="col-lg-4">
+        <div class="card shadow-sm text-center p-4 mb-4">
+            <div class="user-avatar rounded-circle bg-primary bg-opacity-10 text-primary d-inline-flex align-items-center justify-content-center fw-bold fs-1 mx-auto mb-3" style="width: 88px; height: 88px;">
+                <i class="bi bi-person-badge"></i>
+            </div>
+            <h4 class="fw-bold mb-1 text-dark">{{ doctor.name }}</h4>
+            <div class="badge bg-light text-primary border font-monospace mb-2">{{ doctor.doctor_code }}</div>
+            <div class="text-secondary fw-semibold">{{ doctor.specialization }}</div>
+            <div class="text-muted small">{{ doctor.qualification }}</div>
+
+            <div class="mt-3 pt-3 border-top text-start small">
+                <div class="d-flex justify-content-between py-1">
+                    <span class="text-muted">Department:</span>
+                    <span class="fw-bold">{{ doctor.department.name }}</span>
+                </div>
+                <div class="d-flex justify-content-between py-1">
+                    <span class="text-muted">Experience:</span>
+                    <span>{{ doctor.experience_years }} Years</span>
+                </div>
+                <div class="d-flex justify-content-between py-1">
+                    <span class="text-muted">Consultation Fee:</span>
+                    <span class="fw-bold text-success">{{ doctor.consultation_fee | currency }}</span>
+                </div>
+                <div class="d-flex justify-content-between py-1">
+                    <span class="text-muted">Office / Room:</span>
+                    <span>{{ doctor.room_number or 'Room 101' }}</span>
+                </div>
+                <div class="d-flex justify-content-between py-1">
+                    <span class="text-muted">Availability:</span>
+                    <span class="badge {% if doctor.availability_status == 'Available' %}bg-success{% else %}bg-warning text-dark{% endif %}">{{ doctor.availability_status }}</span>
+                </div>
+                <div class="d-flex justify-content-between py-1">
+                    <span class="text-muted">Phone:</span>
+                    <span>{{ doctor.phone }}</span>
+                </div>
+                <div class="d-flex justify-content-between py-1">
+                    <span class="text-muted">Email:</span>
+                    <span>{{ doctor.email }}</span>
+                </div>
+            </div>
+
+            {% if current_user.role_name in ['Super Admin', 'Hospital Admin'] %}
+            <div class="mt-3 pt-2">
+                <a href="{{ url_for('doctors.edit', doctor_id=doctor.id) }}" class="btn btn-outline-primary btn-sm w-100">
+                    <i class="bi bi-pencil me-1"></i>Edit Doctor Profile
+                </a>
+            </div>
+            {% endif %}
+        </div>
+
+        {% if doctor.bio %}
+        <div class="card shadow-sm">
+            <div class="card-header bg-white fw-bold">Biography & Specialties</div>
+            <div class="card-body small text-secondary">
+                {{ doctor.bio }}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Right Column: Doctor's Schedule & Assigned Patients & Appointments -->
+    <div class="col-lg-8">
+        <!-- Today's Schedule Card -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <span class="fw-bold"><i class="bi bi-calendar2-day text-primary me-2"></i>Today's Appointments ({{ today_appointments | length }})</span>
+                <span class="badge bg-light text-secondary border">Shift: {{ doctor.available_time_start }} - {{ doctor.available_time_end }}</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Patient Name</th>
+                            <th>Reason</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for apt in today_appointments %}
+                        <tr>
+                            <td><span class="badge bg-light text-dark border">{{ apt.appointment_time }}</span></td>
+                            <td>
+                                <a href="{{ url_for('patients.view_profile', patient_id=apt.patient_id) }}" class="fw-bold text-dark text-decoration-none">
+                                    {{ apt.patient.full_name }}
+                                </a>
+                            </td>
+                            <td class="small">{{ apt.reason }}</td>
+                            <td><span class="badge {{ apt.status | status_badge }}">{{ apt.status }}</span></td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="4" class="text-center py-3 text-muted">No appointments scheduled for today.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Assigned Primary Patients -->
+        <div class="card shadow-sm">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <span class="fw-bold"><i class="bi bi-people text-success me-2"></i>Primary Assigned Patients ({{ assigned_patients | length }})</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Patient ID</th>
+                            <th>Name</th>
+                            <th>Gender / Age</th>
+                            <th>Phone</th>
+                            <th>Status</th>
+                            <th class="text-end">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for pat in assigned_patients %}
+                        <tr>
+                            <td><code>{{ pat.patient_id }}</code></td>
+                            <td class="fw-bold">{{ pat.full_name }}</td>
+                            <td>{{ pat.gender }}, {{ pat.age }} yrs</td>
+                            <td>{{ pat.phone }}</td>
+                            <td><span class="badge {{ pat.status | status_badge }}">{{ pat.status }}</span></td>
+                            <td class="text-end">
+                                <a href="{{ url_for('patients.view_profile', patient_id=pat.id) }}" class="btn btn-sm btn-outline-primary">View</a>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="6" class="text-center py-3 text-muted">No primary patients assigned.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

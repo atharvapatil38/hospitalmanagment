@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% block title %}{{ department.name }} - Department Details{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <div class="d-flex align-items-center gap-2">
+            <h4 class="fw-bold mb-0 text-dark"><i class="bi bi-diagram-3-fill me-2 text-primary"></i>Department of {{ department.name }}</h4>
+            <span class="badge bg-light text-primary border font-monospace">{{ department.code }}</span>
+            <span class="badge {{ department.status | status_badge }}">{{ department.status }}</span>
+        </div>
+        <div class="text-muted small">HOD: {{ department.head_doctor_name or 'Dr. Senior Consultant' }} • Contact: {{ department.phone or 'Ext 101' }}</div>
+    </div>
+    <a href="{{ url_for('departments.index') }}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i>Back to List
+    </a>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-6">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-white fw-bold">
+                <i class="bi bi-person-badge text-primary me-2"></i>Medical Consultants & Doctors ({{ doctors | length }})
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Doctor Name</th>
+                            <th>Specialization</th>
+                            <th>Fee</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for doc in doctors %}
+                        <tr>
+                            <td>
+                                <a href="{{ url_for('doctors.view_profile', doctor_id=doc.id) }}" class="fw-bold text-dark text-decoration-none">
+                                    {{ doc.name }}
+                                </a>
+                            </td>
+                            <td class="small">{{ doc.specialization }}</td>
+                            <td class="text-success fw-bold">{{ doc.consultation_fee | currency }}</td>
+                            <td><span class="badge {% if doc.availability_status == 'Available' %}bg-success{% else %}bg-warning text-dark{% endif %}">{{ doc.availability_status }}</span></td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="4" class="text-center py-3 text-muted">No doctors assigned yet.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-header bg-white fw-bold">
+                <i class="bi bi-person-lines-fill text-info me-2"></i>Nursing & Support Staff ({{ staff_members | length }})
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Staff Name</th>
+                            <th>Role</th>
+                            <th>Phone</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for s in staff_members %}
+                        <tr>
+                            <td class="fw-bold">{{ s.name }}</td>
+                            <td><span class="badge bg-light text-dark border">{{ s.role_title }}</span></td>
+                            <td>{{ s.phone }}</td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="3" class="text-center py-3 text-muted">No staff assigned to this department.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white fw-bold">
+                <i class="bi bi-calendar-check text-success me-2"></i>Recent Department Appointments
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Patient</th>
+                            <th>Doctor</th>
+                            <th>Date / Time</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for apt in recent_appointments %}
+                        <tr>
+                            <td>
+                                <a href="{{ url_for('patients.view_profile', patient_id=apt.patient_id) }}" class="fw-bold text-dark text-decoration-none">
+                                    {{ apt.patient.full_name }}
+                                </a>
+                            </td>
+                            <td>{{ apt.doctor.name }}</td>
+                            <td class="small">{{ apt.appointment_date | format_date }} {{ apt.appointment_time }}</td>
+                            <td><span class="badge {{ apt.status | status_badge }}">{{ apt.status }}</span></td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="4" class="text-center py-4 text-muted">No recent appointments recorded for this department.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block title %}Lab Report - {{ order.order_id }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 no-print">
+    <div>
+        <h4 class="fw-bold mb-0 text-dark"><i class="bi bi-file-earmark-medical me-2 text-primary"></i>Diagnostic Investigation Report</h4>
+        <div class="text-muted small">Order Ref: <code>{{ order.order_id }}</code> • Test: {{ order.lab_test.test_name }}</div>
+    </div>
+    <div class="d-flex gap-2">
+        <button onclick="window.print()" class="btn btn-primary btn-sm">
+            <i class="bi bi-printer-fill me-1"></i>Print Report
+        </button>
+        <a href="{{ url_for('laboratory.index') }}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left me-1"></i>Back to Lab
+        </a>
+    </div>
+</div>
+
+<div class="print-sheet shadow-sm">
+    <!-- Header -->
+    <div class="print-header d-flex justify-content-between align-items-center">
+        <div>
+            <h3 class="fw-bold text-primary mb-0"><i class="bi bi-hospital-fill me-2"></i>{{ hospital_name }}</h3>
+            <div class="text-muted small">Department of Pathology & Clinical Diagnostics</div>
+            <div class="text-muted small">{{ hospital_address }} • Phone: {{ hospital_phone }}</div>
+        </div>
+        <div class="text-end">
+            <h5 class="fw-bold text-dark text-uppercase mb-0">Laboratory Report</h5>
+            <div class="badge bg-light text-dark border font-monospace mt-1">ORDER: {{ order.order_id }}</div>
+        </div>
+    </div>
+
+    <!-- Patient Bar -->
+    <div class="row g-2 p-3 bg-light rounded mb-4" style="font-size: 0.9rem;">
+        <div class="col-6">
+            <div><span class="text-muted">Patient Name:</span> <strong>{{ order.patient.full_name }}</strong></div>
+            <div><span class="text-muted">Patient ID:</span> <code>{{ order.patient.patient_id }}</code></div>
+            <div><span class="text-muted">Age / Gender:</span> {{ order.patient.age }} Years / {{ order.patient.gender }}</div>
+            <div><span class="text-muted">Ordering Doctor:</span> Dr. {{ order.doctor.name }}</div>
+        </div>
+        <div class="col-6 text-end">
+            <div><span class="text-muted">Specimen:</span> <strong>{{ order.lab_test.sample_type }}</strong></div>
+            <div><span class="text-muted">Order Date:</span> {{ order.order_date | format_datetime }}</div>
+            <div><span class="text-muted">Report Date:</span> <strong>{{ order.result.completed_at | format_datetime if order.result else 'Pending' }}</strong></div>
+            <div><span class="text-muted">Priority:</span> <span class="badge bg-light text-dark border">{{ order.priority }}</span></div>
+        </div>
+    </div>
+
+    <!-- Test Findings Table -->
+    <div class="mb-4">
+        <h5 class="fw-bold text-primary border-bottom pb-2 mb-3">{{ order.lab_test.test_name }} ({{ order.lab_test.category }})</h5>
+        
+        <table class="table table-bordered align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th style="width: 35%;">Investigation Parameter</th>
+                    <th style="width: 25%;">Result Value</th>
+                    <th style="width: 25%;">Reference Range</th>
+                    <th style="width: 15%;">Clinical Flag</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="fw-semibold">{{ order.lab_test.test_name }}</td>
+                    <td class="fs-5 fw-bold text-dark">
+                        {{ order.result.result_value if order.result else 'Pending' }} 
+                        <span class="small fw-normal text-muted">{{ order.result.unit if order.result and order.result.unit else '' }}</span>
+                    </td>
+                    <td class="small">{{ order.result.reference_range if order.result and order.result.reference_range else (order.lab_test.normal_range or 'N/A') }}</td>
+                    <td>
+                        {% if order.result %}
+                            {% set flag = order.result.status_flag %}
+                            <span class="badge {% if flag in ['High', 'Critical'] %}bg-danger{% elif flag == 'Low' %}bg-warning text-dark{% else %}bg-success{% endif %}">
+                                {{ flag }}
+                            </span>
+                        {% else %}
+                            <span class="badge bg-secondary">Pending</span>
+                        {% endif %}
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    {% if order.result and order.result.remarks %}
+    <div class="mb-4">
+        <h6 class="fw-bold text-primary border-bottom pb-1 mb-2">Remarks & Interpretations:</h6>
+        <p class="text-secondary small mb-0" style="white-space: pre-line;">{{ order.result.remarks }}</p>
+    </div>
+    {% endif %}
+
+    <!-- Signatures Footer -->
+    <div class="row mt-5 pt-4">
+        <div class="col-6">
+            <div class="border-top border-dark d-inline-block pt-2" style="width: 200px;">
+                <div class="fw-bold text-dark">{{ order.result.technician_name if order.result else 'Medical Technologist' }}</div>
+                <div class="text-muted small">Medical Lab Technologist</div>
+            </div>
+        </div>
+        <div class="col-6 text-end">
+            <div class="border-top border-dark d-inline-block pt-2" style="width: 200px;">
+                <div class="fw-bold text-dark">{{ order.result.verified_by or 'Dr. Pathologist' if order.result else 'Consultant Pathologist' }}</div>
+                <div class="text-muted small">Consultant Pathologist</div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

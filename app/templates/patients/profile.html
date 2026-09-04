@@ -1,0 +1,565 @@
+{% extends "base.html" %}
+{% block title %}{{ patient.full_name }} ({{ patient.patient_id }}){% endblock %}
+
+{% block content %}
+<!-- Patient 360 Header Profile Card -->
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-body p-4">
+        <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3">
+            <div class="d-flex align-items-center">
+                <div class="user-avatar rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold fs-2 me-3" style="width: 72px; height: 72px;">
+                    {{ patient.first_name[:1] | upper }}{{ patient.last_name[:1] | upper }}
+                </div>
+                <div>
+                    <div class="d-flex align-items-center gap-2 mb-1">
+                        <h4 class="fw-bold mb-0 text-dark">{{ patient.full_name }}</h4>
+                        <span class="badge bg-light text-dark border font-monospace">{{ patient.patient_id }}</span>
+                        <span class="badge {{ patient.status | status_badge }}">{{ patient.status }}</span>
+                    </div>
+                    <div class="text-muted small">
+                        <span><i class="bi bi-gender-ambiguous me-1"></i>{{ patient.gender }}, {{ patient.age }} yrs (DOB: {{ patient.dob | format_date }})</span>
+                        <span class="mx-2">•</span>
+                        <span><i class="bi bi-droplet-fill text-danger me-1"></i>Blood Group: <strong>{{ patient.blood_group or 'Unknown' }}</strong></span>
+                        <span class="mx-2">•</span>
+                        <span><i class="bi bi-telephone-fill me-1"></i>{{ patient.phone }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Action Dropdown / Action Buttons -->
+            <div class="d-flex flex-wrap gap-2">
+                <a href="{{ url_for('appointments.book', patient_id=patient.id) }}" class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-calendar-plus me-1"></i>Book Visit
+                </a>
+                {% if patient.status != 'Admitted' %}
+                <a href="{{ url_for('admissions.admit', patient_id=patient.id) }}" class="btn btn-sm btn-outline-danger">
+                    <i class="bi bi-box-arrow-in-right me-1"></i>Admit Patient
+                </a>
+                {% endif %}
+                <a href="{{ url_for('medical_records.record_vitals', patient_id=patient.id) }}" class="btn btn-sm btn-outline-success">
+                    <i class="bi bi-heart-pulse me-1"></i>Record Vitals
+                </a>
+                <a href="{{ url_for('medical_records.create', patient_id=patient.id) }}" class="btn btn-sm btn-outline-info">
+                    <i class="bi bi-journal-plus me-1"></i>Clinical Note
+                </a>
+                <a href="{{ url_for('prescriptions.create', patient_id=patient.id) }}" class="btn btn-sm btn-outline-warning text-dark">
+                    <i class="bi bi-prescription2 me-1"></i>New Rx
+                </a>
+                <a href="{{ url_for('laboratory.create_order', patient_id=patient.id) }}" class="btn btn-sm btn-outline-secondary">
+                    <i class="bi bi-radioactive me-1"></i>Order Lab
+                </a>
+                <a href="{{ url_for('billing.create', patient_id=patient.id) }}" class="btn btn-sm btn-primary">
+                    <i class="bi bi-receipt me-1"></i>Create Invoice
+                </a>
+                <a href="{{ url_for('patients.edit', patient_id=patient.id) }}" class="btn btn-sm btn-light border" title="Edit Patient Profile">
+                    <i class="bi bi-pencil"></i>
+                </a>
+            </div>
+        </div>
+
+        {% if active_admission %}
+        <div class="alert alert-info py-2 px-3 mt-3 mb-0 d-flex justify-content-between align-items-center small">
+            <div>
+                <i class="bi bi-hospital me-2 fs-6"></i>
+                <strong>Currently Admitted:</strong> Room {{ active_admission.room.room_number }} ({{ active_admission.room.room_type }}), {{ active_admission.bed.bed_number }} • Admitted on {{ active_admission.admission_date | format_datetime }} ({{ active_admission.length_of_stay_days }} days stay)
+            </div>
+            <a href="{{ url_for('admissions.discharge', adm_id=active_admission.id) }}" class="btn btn-sm btn-outline-primary bg-white">Discharge Patient</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- 360 Profile Navigation Tabs -->
+<ul class="nav nav-tabs nav-fill mb-4 bg-white p-2 rounded shadow-sm border" id="patient360Tabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active fw-semibold" id="overview-tab" data-bs-toggle="tab" data-bs-target="#overview" type="button" role="tab">
+            <i class="bi bi-info-circle me-1"></i>Overview
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link fw-semibold" id="appointments-tab" data-bs-toggle="tab" data-bs-target="#appointments" type="button" role="tab">
+            <i class="bi bi-calendar-event me-1"></i>Appointments ({{ appointments | length }})
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link fw-semibold" id="clinical-tab" data-bs-toggle="tab" data-bs-target="#clinical" type="button" role="tab">
+            <i class="bi bi-clipboard2-pulse me-1"></i>Clinical & Vitals ({{ medical_records | length }})
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link fw-semibold" id="prescriptions-tab" data-bs-toggle="tab" data-bs-target="#prescriptions" type="button" role="tab">
+            <i class="bi bi-prescription me-1"></i>Prescriptions ({{ prescriptions | length }})
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link fw-semibold" id="lab-tab" data-bs-toggle="tab" data-bs-target="#lab" type="button" role="tab">
+            <i class="bi bi-radioactive me-1"></i>Lab Orders ({{ lab_orders | length }})
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link fw-semibold" id="admissions-tab" data-bs-toggle="tab" data-bs-target="#admissions" type="button" role="tab">
+            <i class="bi bi-hospital me-1"></i>Inpatient Stays ({{ admissions | length }})
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link fw-semibold" id="billing-tab" data-bs-toggle="tab" data-bs-target="#billing" type="button" role="tab">
+            <i class="bi bi-receipt me-1"></i>Invoices & Billing ({{ invoices | length }})
+        </button>
+    </li>
+</ul>
+
+<!-- Tab Contents -->
+<div class="tab-content" id="patient360Content">
+    <!-- 1. OVERVIEW TAB -->
+    <div class="tab-pane fade show active" id="overview" role="tabpanel">
+        <div class="row g-3">
+            <!-- Left: Clinical Alerts & Demographics -->
+            <div class="col-lg-6">
+                <!-- Allergies & Warnings -->
+                <div class="card shadow-sm border-danger border-opacity-25 mb-3">
+                    <div class="card-header bg-danger bg-opacity-10 text-danger fw-bold">
+                        <i class="bi bi-exclamation-octagon-fill me-2"></i>Allergies & Adverse Reactions
+                    </div>
+                    <div class="card-body">
+                        {% if patient.allergies %}
+                            <p class="text-danger fw-semibold mb-0">{{ patient.allergies }}</p>
+                        {% else %}
+                            <p class="text-muted mb-0">No known drug, food, or latex allergies recorded.</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Existing Conditions & Medical History -->
+                <div class="card shadow-sm mb-3">
+                    <div class="card-header bg-light fw-bold">
+                        <i class="bi bi-activity me-2 text-primary"></i>Chronic Conditions & Medical History
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="fw-bold small text-secondary">Chronic Conditions:</label>
+                            <div>{{ patient.existing_conditions or 'None reported.' }}</div>
+                        </div>
+                        <div>
+                            <label class="fw-bold small text-secondary">Past Medical / Surgical History:</label>
+                            <div>{{ patient.medical_history or 'No past surgeries or major medical events recorded.' }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Contact & Emergency Info -->
+                <div class="card shadow-sm">
+                    <div class="card-header bg-light fw-bold">
+                        <i class="bi bi-telephone-inbound me-2 text-info"></i>Contact & Emergency Details
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <span class="text-muted small">Residential Address:</span>
+                                <div class="fw-semibold">{{ patient.address }}, {{ patient.city or '' }} {{ patient.state or '' }} {{ patient.zip_code or '' }}</div>
+                            </div>
+                            <div class="col-6">
+                                <span class="text-muted small">Email Address:</span>
+                                <div class="fw-semibold">{{ patient.email or 'N/A' }}</div>
+                            </div>
+                            <div class="col-6 mt-3">
+                                <span class="text-muted small">Emergency Contact:</span>
+                                <div class="fw-semibold">{{ patient.emergency_contact_name or 'N/A' }} ({{ patient.emergency_contact_relation or '—' }})</div>
+                            </div>
+                            <div class="col-6 mt-3">
+                                <span class="text-muted small">Emergency Phone:</span>
+                                <div class="fw-semibold">{{ patient.emergency_contact_phone or 'N/A' }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Primary Care Info & Recent Vitals -->
+            <div class="col-lg-6">
+                <!-- Primary Physician & Department -->
+                <div class="card shadow-sm mb-3">
+                    <div class="card-header bg-light fw-bold">
+                        <i class="bi bi-person-badge me-2 text-primary"></i>Hospital Care Team
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <span class="text-muted">Assigned Department:</span>
+                            <span class="fw-bold">{{ patient.department.name if patient.department else 'General Medicine' }}</span>
+                        </div>
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <span class="text-muted">Primary Attending Physician:</span>
+                            <span class="fw-bold text-primary">{{ patient.primary_doctor.name if patient.primary_doctor else 'Unassigned' }}</span>
+                        </div>
+                        <div class="d-flex align-items-center justify-content-between">
+                            <span class="text-muted">Registered Since:</span>
+                            <span>{{ patient.registration_date | format_date }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Latest Vital Signs Summary -->
+                <div class="card shadow-sm">
+                    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                        <span class="fw-bold"><i class="bi bi-heart-pulse me-2 text-danger"></i>Latest Vital Signs</span>
+                        <a href="{{ url_for('medical_records.record_vitals', patient_id=patient.id) }}" class="btn btn-sm btn-outline-primary py-0">Record New</a>
+                    </div>
+                    <div class="card-body">
+                        {% if vitals_history %}
+                            {% set latest_vitals = vitals_history[0] %}
+                            <div class="row text-center g-2">
+                                <div class="col-4">
+                                    <div class="p-2 border rounded bg-light">
+                                        <div class="text-muted small">Temperature</div>
+                                        <div class="fw-bold fs-5 text-dark">{{ latest_vitals.temperature or '—' }} °F</div>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="p-2 border rounded bg-light">
+                                        <div class="text-muted small">Blood Pressure</div>
+                                        <div class="fw-bold fs-5 text-dark">{{ latest_vitals.blood_pressure_str }}</div>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="p-2 border rounded bg-light">
+                                        <div class="text-muted small">Heart Rate</div>
+                                        <div class="fw-bold fs-5 text-dark">{{ latest_vitals.heart_rate or '—' }} bpm</div>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="p-2 border rounded bg-light">
+                                        <div class="text-muted small">Oxygen (SpO2)</div>
+                                        <div class="fw-bold fs-5 text-dark">{{ latest_vitals.spo2 or '—' }} %</div>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="p-2 border rounded bg-light">
+                                        <div class="text-muted small">Weight / Height</div>
+                                        <div class="fw-bold fs-5 text-dark">{{ latest_vitals.weight_kg or '—' }} kg</div>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="p-2 border rounded bg-light">
+                                        <div class="text-muted small">BMI Index</div>
+                                        <div class="fw-bold fs-5 text-dark">{{ latest_vitals.bmi or '—' }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="text-muted small mt-3 text-end">Recorded at: {{ latest_vitals.recorded_at | format_datetime }} by {{ latest_vitals.recorded_by or 'Staff' }}</div>
+                        {% else %}
+                            <p class="text-muted text-center py-3 mb-0">No vital signs recorded yet.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. APPOINTMENTS TAB -->
+    <div class="tab-pane fade" id="appointments" role="tabpanel">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <span class="fw-bold"><i class="bi bi-calendar-check text-primary me-2"></i>Appointment Consultations History</span>
+                <a href="{{ url_for('appointments.book', patient_id=patient.id) }}" class="btn btn-sm btn-primary">Book New Appointment</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Ref #</th>
+                            <th>Date & Time</th>
+                            <th>Doctor</th>
+                            <th>Department</th>
+                            <th>Type</th>
+                            <th>Status</th>
+                            <th>Reason</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for apt in appointments %}
+                        <tr>
+                            <td><code>{{ apt.appointment_id }}</code></td>
+                            <td>{{ apt.appointment_date | format_date }} <span class="badge bg-light text-dark border">{{ apt.appointment_time }}</span></td>
+                            <td>{{ apt.doctor.name }}</td>
+                            <td>{{ apt.department.name }}</td>
+                            <td>{{ apt.appointment_type }}</td>
+                            <td><span class="badge {{ apt.status | status_badge }}">{{ apt.status }}</span></td>
+                            <td class="small">{{ apt.reason }}</td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="7" class="text-center py-4 text-muted">No appointments booked for this patient.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. CLINICAL & VITALS TAB -->
+    <div class="tab-pane fade" id="clinical" role="tabpanel">
+        <div class="row g-3">
+            <div class="col-lg-7">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                        <span class="fw-bold"><i class="bi bi-journal-medical text-primary me-2"></i>Consultation Records & Diagnoses</span>
+                        <a href="{{ url_for('medical_records.create', patient_id=patient.id) }}" class="btn btn-sm btn-primary">Add Clinical Encounter</a>
+                    </div>
+                    <div class="card-body">
+                        {% for rec in medical_records %}
+                        <div class="border-bottom pb-3 mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <h6 class="fw-bold text-dark mb-0">{{ rec.diagnosis }}</h6>
+                                <span class="badge bg-light text-muted border">{{ rec.visit_date | format_date }}</span>
+                            </div>
+                            <div class="text-muted small mb-2">Doctor: Dr. {{ rec.doctor.name }} • Ref: <code>{{ rec.record_id }}</code></div>
+                            <div class="mb-2"><strong>Symptoms:</strong> {{ rec.symptoms }}</div>
+                            <div class="mb-2"><strong>Treatment Plan:</strong> {{ rec.treatment_plan }}</div>
+                            {% if rec.clinical_notes %}
+                            <div class="small text-muted bg-light p-2 rounded"><em>Notes: {{ rec.clinical_notes }}</em></div>
+                            {% endif %}
+                        </div>
+                        {% else %}
+                        <p class="text-muted text-center py-4">No clinical consultation notes recorded.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-5">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                        <span class="fw-bold"><i class="bi bi-heart-pulse text-danger me-2"></i>Vitals Log History</span>
+                        <a href="{{ url_for('medical_records.record_vitals', patient_id=patient.id) }}" class="btn btn-sm btn-outline-danger">Record Vitals</a>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover align-middle mb-0" style="font-size: 0.85rem;">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>BP</th>
+                                    <th>Pulse</th>
+                                    <th>Temp</th>
+                                    <th>SpO2</th>
+                                    <th>BMI</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for v in vitals_history %}
+                                <tr>
+                                    <td>{{ v.recorded_at | format_date }}</td>
+                                    <td>{{ v.blood_pressure_str }}</td>
+                                    <td>{{ v.heart_rate or '—' }}</td>
+                                    <td>{{ v.temperature or '—' }}</td>
+                                    <td>{{ v.spo2 or '—' }}%</td>
+                                    <td>{{ v.bmi or '—' }}</td>
+                                </tr>
+                                {% else %}
+                                <tr><td colspan="6" class="text-center py-3 text-muted">No vitals logged.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. PRESCRIPTIONS TAB -->
+    <div class="tab-pane fade" id="prescriptions" role="tabpanel">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <span class="fw-bold"><i class="bi bi-prescription2 text-warning me-2"></i>Prescriptions Issued</span>
+                <a href="{{ url_for('prescriptions.create', patient_id=patient.id) }}" class="btn btn-sm btn-warning text-dark fw-semibold">Write Prescription</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Rx ID</th>
+                            <th>Date</th>
+                            <th>Doctor</th>
+                            <th>Diagnosis</th>
+                            <th>Medicines Count</th>
+                            <th>Status</th>
+                            <th class="text-end">Print / Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for rx in prescriptions %}
+                        <tr>
+                            <td><code>{{ rx.prescription_id }}</code></td>
+                            <td>{{ rx.prescription_date | format_date }}</td>
+                            <td>Dr. {{ rx.doctor.name }}</td>
+                            <td>{{ rx.diagnosis }}</td>
+                            <td><span class="badge bg-light text-dark border">{{ rx.items.count() }} Medications</span></td>
+                            <td><span class="badge {{ rx.status | status_badge }}">{{ rx.status }}</span></td>
+                            <td class="text-end">
+                                <a href="{{ url_for('prescriptions.print_rx', rx_id=rx.id) }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-printer me-1"></i>Print Rx
+                                </a>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="7" class="text-center py-4 text-muted">No prescriptions recorded.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- 5. LAB ORDERS TAB -->
+    <div class="tab-pane fade" id="lab" role="tabpanel">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <span class="fw-bold"><i class="bi bi-radioactive text-primary me-2"></i>Diagnostic Laboratory Orders & Results</span>
+                <a href="{{ url_for('laboratory.create_order', patient_id=patient.id) }}" class="btn btn-sm btn-primary">Order Lab Investigation</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Order ID</th>
+                            <th>Test Name</th>
+                            <th>Category</th>
+                            <th>Priority</th>
+                            <th>Order Date</th>
+                            <th>Status</th>
+                            <th class="text-end">Report</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for order in lab_orders %}
+                        <tr>
+                            <td><code>{{ order.order_id }}</code></td>
+                            <td class="fw-bold">{{ order.lab_test.test_name }}</td>
+                            <td>{{ order.lab_test.category }}</td>
+                            <td>
+                                <span class="badge {% if order.priority == 'Emergency' %}bg-danger{% elif order.priority == 'Urgent' %}bg-warning text-dark{% else %}bg-light text-dark border{% endif %}">
+                                    {{ order.priority }}
+                                </span>
+                            </td>
+                            <td>{{ order.order_date | format_date }}</td>
+                            <td><span class="badge {{ order.status | status_badge }}">{{ order.status }}</span></td>
+                            <td class="text-end">
+                                {% if order.result %}
+                                <a href="{{ url_for('laboratory.print_report', order_id=order.id) }}" target="_blank" class="btn btn-sm btn-outline-success">
+                                    <i class="bi bi-file-earmark-medical me-1"></i>View Report
+                                </a>
+                                {% else %}
+                                <span class="badge bg-light text-muted border">In Progress</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="7" class="text-center py-4 text-muted">No laboratory orders recorded.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- 6. ADMISSIONS TAB -->
+    <div class="tab-pane fade" id="admissions" role="tabpanel">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <span class="fw-bold"><i class="bi bi-hospital text-danger me-2"></i>Inpatient Hospitalization History</span>
+                {% if patient.status != 'Admitted' %}
+                <a href="{{ url_for('admissions.admit', patient_id=patient.id) }}" class="btn btn-sm btn-danger">Admit Inpatient</a>
+                {% endif %}
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Admission ID</th>
+                            <th>Room & Bed</th>
+                            <th>Attending Doctor</th>
+                            <th>Admission Date</th>
+                            <th>Discharge Date</th>
+                            <th>Stay (Days)</th>
+                            <th>Status</th>
+                            <th class="text-end">Summary</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for adm in admissions %}
+                        <tr>
+                            <td><code>{{ adm.admission_id }}</code></td>
+                            <td>Room {{ adm.room.room_number }} ({{ adm.bed.bed_number }})</td>
+                            <td>Dr. {{ adm.doctor.name }}</td>
+                            <td>{{ adm.admission_date | format_datetime }}</td>
+                            <td>{{ adm.discharge_date | format_datetime if adm.discharge_date else '—' }}</td>
+                            <td>{{ adm.length_of_stay_days }} days</td>
+                            <td><span class="badge {{ adm.status | status_badge }}">{{ adm.status }}</span></td>
+                            <td class="text-end">
+                                {% if adm.discharge_summary %}
+                                <a href="{{ url_for('admissions.view_summary', adm_id=adm.id) }}" class="btn btn-sm btn-outline-secondary">
+                                    <i class="bi bi-file-text me-1"></i>Summary
+                                </a>
+                                {% elif adm.status == 'Admitted' %}
+                                <a href="{{ url_for('admissions.discharge', adm_id=adm.id) }}" class="btn btn-sm btn-outline-danger">
+                                    Discharge
+                                </a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="8" class="text-center py-4 text-muted">No inpatient admission history recorded.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- 7. BILLING & INVOICES TAB -->
+    <div class="tab-pane fade" id="billing" role="tabpanel">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <span class="fw-bold"><i class="bi bi-receipt text-success me-2"></i>Invoices & Billing Settlements</span>
+                <a href="{{ url_for('billing.create', patient_id=patient.id) }}" class="btn btn-sm btn-success">Generate Invoice</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Invoice #</th>
+                            <th>Date</th>
+                            <th>Type</th>
+                            <th>Grand Total</th>
+                            <th>Paid Amount</th>
+                            <th>Balance Due</th>
+                            <th>Status</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for inv in invoices %}
+                        <tr>
+                            <td><code>{{ inv.invoice_number }}</code></td>
+                            <td>{{ inv.invoice_date | format_date }}</td>
+                            <td><span class="badge bg-light text-dark border">{{ inv.billing_type }}</span></td>
+                            <td class="fw-bold">{{ inv.grand_total | currency }}</td>
+                            <td class="text-success">{{ inv.paid_amount | currency }}</td>
+                            <td class="text-danger fw-bold">{{ inv.balance_due | currency }}</td>
+                            <td><span class="badge {{ inv.payment_status | status_badge }}">{{ inv.payment_status }}</span></td>
+                            <td class="text-end">
+                                <a href="{{ url_for('billing.view_invoice', inv_id=inv.id) }}" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-eye"></i> View / Pay
+                                </a>
+                                <a href="{{ url_for('billing.print_invoice', inv_id=inv.id) }}" target="_blank" class="btn btn-sm btn-outline-secondary">
+                                    <i class="bi bi-printer"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="8" class="text-center py-4 text-muted">No invoices generated for this patient.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

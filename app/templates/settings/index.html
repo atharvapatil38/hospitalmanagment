@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Hospital System Settings{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-9">
+        <div class="d-flex align-items-center justify-content-between mb-4">
+            <div>
+                <h4 class="fw-bold mb-0 text-dark"><i class="bi bi-gear-fill me-2 text-primary"></i>Hospital Configuration & Branding</h4>
+                <div class="text-muted small">Configure official hospital profile, contact details, currency, tax rates, and billing terms</div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+                <form method="POST">
+                    {{ form.hidden_tag() }}
+
+                    <h6 class="fw-bold text-primary border-bottom pb-2 mb-3">1. Hospital Organization Profile</h6>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold small">Hospital Name <span class="text-danger">*</span></label>
+                            {{ form.hospital_name(class="form-control" + (" is-invalid" if form.hospital_name.errors else "")) }}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold small">Contact Email <span class="text-danger">*</span></label>
+                            {{ form.hospital_email(class="form-control") }}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold small">Helpline / Emergency Phone <span class="text-danger">*</span></label>
+                            {{ form.hospital_phone(class="form-control") }}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold small">Currency Symbol <span class="text-danger">*</span></label>
+                            {{ form.hospital_currency(class="form-control", placeholder="₹") }}
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label fw-semibold small">Physical Address & Location <span class="text-danger">*</span></label>
+                            {{ form.hospital_address(class="form-control", rows=2) }}
+                        </div>
+                    </div>
+
+                    <h6 class="fw-bold text-primary border-bottom pb-2 mb-3">2. Clinical & Financial Defaults</h6>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold small">Default Tax / VAT Rate (%) <span class="text-danger">*</span></label>
+                            {{ form.default_tax_rate(class="form-control") }}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold small">Standard Appointment Slot Duration (Minutes)</label>
+                            {{ form.appointment_duration(class="form-control") }}
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label fw-semibold small">Default Invoice Footer Legal / Terms Note</label>
+                            {{ form.invoice_footer_note(class="form-control", rows=2) }}
+                        </div>
+                    </div>
+
+                    <div class="mt-4 pt-3 border-top text-end">
+                        <button type="submit" class="btn btn-primary px-4 fw-semibold">
+                            <i class="bi bi-check2-circle me-1"></i>Save System Settings
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

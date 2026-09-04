@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}Clinical Encounter - {{ record.record_id }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold mb-0 text-dark"><i class="bi bi-file-earmark-medical me-2 text-primary"></i>Clinical Encounter Record</h4>
+        <div class="text-muted small">Ref: <code>{{ record.record_id }}</code> • Visit Date: {{ record.visit_date | format_datetime }}</div>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('patients.view_profile', patient_id=record.patient_id) }}" class="btn btn-outline-primary btn-sm">
+            <i class="bi bi-person me-1"></i>View Patient 360
+        </a>
+        <a href="{{ url_for('medical_records.index') }}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left me-1"></i>Back to Records
+        </a>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-white fw-bold">
+                <i class="bi bi-clipboard2-pulse text-primary me-2"></i>Consultation Summary
+            </div>
+            <div class="card-body p-4">
+                <div class="mb-3">
+                    <label class="text-muted small fw-bold text-uppercase">Clinical Diagnosis:</label>
+                    <h5 class="fw-bold text-primary">{{ record.diagnosis }}</h5>
+                </div>
+
+                <div class="mb-3">
+                    <label class="text-muted small fw-bold text-uppercase">Chief Symptoms & Complaints:</label>
+                    <p class="mb-0">{{ record.symptoms }}</p>
+                </div>
+
+                <div class="mb-3">
+                    <label class="text-muted small fw-bold text-uppercase">Treatment Plan & Medical Advice:</label>
+                    <p class="mb-0">{{ record.treatment_plan }}</p>
+                </div>
+
+                {% if record.clinical_notes %}
+                <div class="mb-3">
+                    <label class="text-muted small fw-bold text-uppercase">Physical Examination / Notes:</label>
+                    <div class="p-3 bg-light rounded text-secondary small">{{ record.clinical_notes }}</div>
+                </div>
+                {% endif %}
+
+                {% if record.follow_up_date %}
+                <div class="alert alert-info py-2 px-3 mb-0 small">
+                    <i class="bi bi-calendar-event me-2"></i>Scheduled Follow-up Review Date: <strong>{{ record.follow_up_date | format_date }}</strong>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <!-- Patient Mini Card -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-white fw-bold">Patient Details</div>
+            <div class="card-body">
+                <h5 class="fw-bold mb-1">{{ record.patient.full_name }}</h5>
+                <div class="badge bg-light text-dark border font-monospace mb-2">{{ record.patient.patient_id }}</div>
+                <div class="small text-muted mb-1">{{ record.patient.gender }}, {{ record.patient.age }} yrs</div>
+                <div class="small text-muted mb-1">Blood Group: <strong>{{ record.patient.blood_group or 'Unknown' }}</strong></div>
+                <div class="small text-muted">Phone: {{ record.patient.phone }}</div>
+            </div>
+        </div>
+
+        <!-- Attending Physician -->
+        <div class="card shadow-sm">
+            <div class="card-header bg-white fw-bold">Attending Doctor</div>
+            <div class="card-body">
+                <h6 class="fw-bold mb-1">Dr. {{ record.doctor.name }}</h6>
+                <div class="text-primary small mb-1">{{ record.doctor.specialization }}</div>
+                <div class="text-muted small">{{ record.doctor.department.name }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

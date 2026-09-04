@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+{% block title %}Appointments Management{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold mb-0 text-dark"><i class="bi bi-calendar-check-fill me-2 text-primary"></i>Appointment Consultations</h4>
+        <div class="text-muted small">Manage outpatient visits, schedule clinic slots, and update patient appointment status</div>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('appointments.export_csv') }}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-file-earmark-spreadsheet me-1"></i>Export CSV
+        </a>
+        <a href="{{ url_for('appointments.book') }}" class="btn btn-primary btn-sm">
+            <i class="bi bi-calendar-plus me-1"></i>Book New Appointment
+        </a>
+    </div>
+</div>
+
+<!-- Filters Bar -->
+<div class="card shadow-sm mb-4">
+    <div class="card-body p-3">
+        <form method="GET" class="row g-2 align-items-center">
+            <div class="col-md-3">
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-light"><i class="bi bi-search"></i></span>
+                    <input type="text" name="search" class="form-control" placeholder="Search patient or Ref #..." value="{{ search }}">
+                </div>
+            </div>
+            <div class="col-md-2">
+                <select name="date" class="form-select form-select-sm">
+                    <option value="">-- All Dates --</option>
+                    <option value="today" {% if date_filter == 'today' %}selected{% endif %}>Today's Schedule</option>
+                    <option value="upcoming" {% if date_filter == 'upcoming' %}selected{% endif %}>Upcoming</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select name="doctor_id" class="form-select form-select-sm">
+                    <option value="">-- All Doctors --</option>
+                    {% for doc in doctors %}
+                    <option value="{{ doc.id }}" {% if doctor_id == (doc.id | string) %}selected{% endif %}>{{ doc.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select name="status" class="form-select form-select-sm">
+                    <option value="">-- All Statuses --</option>
+                    {% for st in ['Scheduled', 'Confirmed', 'Completed', 'Cancelled', 'No Show'] %}
+                    <option value="{{ st }}" {% if status == st %}selected{% endif %}>{{ st }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3 d-flex gap-2">
+                <button type="submit" class="btn btn-sm btn-primary flex-grow-1"><i class="bi bi-filter me-1"></i>Filter</button>
+                <a href="{{ url_for('appointments.index') }}" class="btn btn-sm btn-outline-secondary">Reset</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Appointments Table -->
+<div class="card shadow-sm">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>Ref #</th>
+                    <th>Patient</th>
+                    <th>Doctor</th>
+                    <th>Date & Time</th>
+                    <th>Type</th>
+                    <th>Reason / Notes</th>
+                    <th>Status</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for apt in appointments.items %}
+                <tr>
+                    <td><code>{{ apt.appointment_id }}</code></td>
+                    <td>
+                        <a href="{{ url_for('patients.view_profile', patient_id=apt.patient_id) }}" class="fw-bold text-dark text-decoration-none">
+                            {{ apt.patient.full_name }}
+                        </a>
+                        <div class="text-muted small">{{ apt.patient.phone }}</div>
+                    </td>
+                    <td>
+                        <div class="fw-semibold">{{ apt.doctor.name }}</div>
+                        <div class="text-muted small">{{ apt.department.name }}</div>
+                    </td>
+                    <td>
+                        <div>{{ apt.appointment_date | format_date }}</div>
+                        <span class="badge bg-light text-dark border">{{ apt.appointment_time }}</span>
+                    </td>
+                    <td><span class="badge bg-light text-secondary border">{{ apt.appointment_type }}</span></td>
+                    <td class="small" style="max-width: 180px;" title="{{ apt.reason }}">
+                        <div class="text-truncate">{{ apt.reason }}</div>
+                    </td>
+                    <td>
+                        <span class="badge {{ apt.status | status_badge }}">{{ apt.status }}</span>
+                    </td>
+                    <td class="text-end">
+                        <div class="dropdown d-inline">
+                            <button class="btn btn-sm btn-light border dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                Status
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                                <li>
+                                    <form method="POST" action="{{ url_for('appointments.update_status', apt_id=apt.id) }}">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <input type="hidden" name="status" value="Confirmed">
+                                        <button class="dropdown-item text-info" type="submit"><i class="bi bi-check-circle me-2"></i>Confirm</button>
+                                    </form>
+                                </li>
+                                <li>
+                                    <form method="POST" action="{{ url_for('appointments.update_status', apt_id=apt.id) }}">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <input type="hidden" name="status" value="Completed">
+                                        <button class="dropdown-item text-success" type="submit"><i class="bi bi-check2-all me-2"></i>Complete</button>
+                                    </form>
+                                </li>
+                                <li>
+                                    <form method="POST" action="{{ url_for('appointments.update_status', apt_id=apt.id) }}">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <input type="hidden" name="status" value="No Show">
+                                        <button class="dropdown-item text-dark" type="submit"><i class="bi bi-person-slash me-2"></i>No Show</button>
+                                    </form>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <form method="POST" action="{{ url_for('appointments.update_status', apt_id=apt.id) }}">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <input type="hidden" name="status" value="Cancelled">
+                                        <button class="dropdown-item text-danger" type="submit"><i class="bi bi-x-circle me-2"></i>Cancel</button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </div>
+                        <a href="{{ url_for('appointments.reschedule', apt_id=apt.id) }}" class="btn btn-sm btn-outline-secondary" title="Reschedule">
+                            <i class="bi bi-clock-history"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="8" class="text-center py-4 text-muted">No appointments found matching your criteria.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if appointments.pages > 1 %}
+    <div class="card-footer bg-white border-top py-3 d-flex justify-content-between align-items-center">
+        <div class="small text-muted">Showing Page {{ appointments.page }} of {{ appointments.pages }} ({{ appointments.total }} records)</div>
+        <ul class="pagination pagination-sm mb-0">
+            {% for p in appointments.iter_pages() %}
+                {% if p %}
+                    <li class="page-item {% if p == appointments.page %}active{% endif %}">
+                        <a class="page-link" href="{{ url_for('appointments.index', page=p, search=search, date=date_filter, doctor_id=doctor_id, status=status) }}">{{ p }}</a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link">…</span></li>
+                {% endif %}
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

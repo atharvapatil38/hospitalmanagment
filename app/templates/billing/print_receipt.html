@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Receipt {{ payment.payment_code }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 no-print">
+    <div>
+        <h4 class="fw-bold mb-0 text-dark"><i class="bi bi-receipt me-2 text-primary"></i>Official Payment Receipt</h4>
+        <div class="text-muted small">Receipt Ref: <code>{{ payment.payment_code }}</code></div>
+    </div>
+    <div class="d-flex gap-2">
+        <button onclick="window.print()" class="btn btn-primary btn-sm">
+            <i class="bi bi-printer-fill me-1"></i>Print Receipt
+        </button>
+        <a href="{{ url_for('billing.view_invoice', inv_id=payment.invoice_id) }}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left me-1"></i>Back to Invoice
+        </a>
+    </div>
+</div>
+
+<div class="print-sheet shadow-sm" style="max-width: 650px;">
+    <!-- Header -->
+    <div class="print-header d-flex justify-content-between align-items-center pb-3 mb-3 border-bottom">
+        <div>
+            <h4 class="fw-bold text-primary mb-0"><i class="bi bi-hospital-fill me-2"></i>{{ hospital_name }}</h4>
+            <div class="text-muted small">{{ hospital_address }}</div>
+        </div>
+        <div class="text-end">
+            <h5 class="fw-bold text-success text-uppercase mb-0">PAYMENT RECEIPT</h5>
+            <div class="badge bg-light text-dark border font-monospace mt-1">{{ payment.payment_code }}</div>
+        </div>
+    </div>
+
+    <div class="bg-light p-3 rounded mb-4" style="font-size: 0.9rem;">
+        <div class="row g-2">
+            <div class="col-6">
+                <div><span class="text-muted">Received From:</span> <strong>{{ payment.patient.full_name }}</strong></div>
+                <div><span class="text-muted">Patient ID:</span> <code>{{ payment.patient.patient_id }}</code></div>
+                <div><span class="text-muted">Invoice Ref:</span> <code>{{ payment.invoice.invoice_number }}</code></div>
+            </div>
+            <div class="col-6 text-end">
+                <div><span class="text-muted">Receipt Date:</span> <strong>{{ payment.payment_date | format_datetime }}</strong></div>
+                <div><span class="text-muted">Payment Mode:</span> <span class="badge bg-light text-dark border">{{ payment.payment_method }}</span></div>
+                {% if payment.transaction_reference %}
+                <div><span class="text-muted">Txn Ref #:</span> <code>{{ payment.transaction_reference }}</code></div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Amount Box -->
+    <div class="text-center p-4 border rounded bg-success bg-opacity-10 mb-4">
+        <div class="text-muted small text-uppercase fw-bold">Amount Received</div>
+        <div class="display-5 fw-bold text-success">{{ payment.amount | currency }}</div>
+        <div class="text-muted small mt-1">Status: Paid & Settled</div>
+    </div>
+
+    <div class="d-flex justify-content-between p-2 bg-light rounded mb-4 small">
+        <span>Invoice Grand Total: <strong>{{ payment.invoice.grand_total | currency }}</strong></span>
+        <span>Remaining Balance: <strong class="text-danger">{{ payment.invoice.balance_due | currency }}</strong></span>
+    </div>
+
+    <!-- Footer -->
+    <div class="row mt-4 pt-3">
+        <div class="col-6 text-muted small">
+            <div>Cashier: {{ payment.received_by or 'Front Desk Cashier' }}</div>
+        </div>
+        <div class="col-6 text-end">
+            <div class="border-top border-dark d-inline-block pt-2" style="width: 160px;">
+                <div class="fw-bold small">Authorized Cashier</div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-9">
+        <div class="d-flex align-items-center justify-content-between mb-4">
+            <h4 class="fw-bold mb-0 text-dark"><i class="bi bi-box-arrow-in-right me-2 text-danger"></i>{{ title }}</h4>
+            <a href="{{ url_for('admissions.index') }}" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-arrow-left me-1"></i>Back to Admissions
+            </a>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+                <form method="POST">
+                    {{ form.hidden_tag() }}
+
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label fw-semibold small">Patient to Admit <span class="text-danger">*</span></label>
+                            {{ form.patient_id(class="form-select") }}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold small">Attending Consultant Doctor <span class="text-danger">*</span></label>
+                            {{ form.doctor_id(class="form-select") }}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold small">Admitting Clinical Department <span class="text-danger">*</span></label>
+                            {{ form.department_id(class="form-select") }}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold small">Select Room / Ward <span class="text-danger">*</span></label>
+                            {{ form.room_id(class="form-select", id="room_id") }}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold small">Select Available Bed <span class="text-danger">*</span></label>
+                            {{ form.bed_id(class="form-select", id="bed_id") }}
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label fw-semibold small">Reason for Inpatient Admission <span class="text-danger">*</span></label>
+                            {{ form.reason_for_admission(class="form-control" + (" is-invalid" if form.reason_for_admission.errors else ""), rows=2, placeholder="e.g. Acute exacerbation of COPD requiring oxygenation and IV antibiotics...") }}
+                            {% for error in form.reason_for_admission.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label fw-semibold small">Initial Clinical Diagnosis <span class="text-danger">*</span></label>
+                            {{ form.initial_diagnosis(class="form-control" + (" is-invalid" if form.initial_diagnosis.errors else ""), rows=2, placeholder="e.g. Severe Community Acquired Pneumonia, Type 2 Respiratory Failure") }}
+                            {% for error in form.initial_diagnosis.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
+                        </div>
+                    </div>
+
+                    <div class="mt-4 pt-3 border-top text-end">
+                        <a href="{{ url_for('admissions.index') }}" class="btn btn-light me-2">Cancel</a>
+                        <button type="submit" class="btn btn-danger px-4 fw-semibold">
+                            <i class="bi bi-hospital me-1"></i>Admit Patient & Occupy Bed
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

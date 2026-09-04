@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block title %}Medical Prescriptions{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold mb-0 text-dark"><i class="bi bi-prescription2 me-2 text-primary"></i>Medical Prescriptions</h4>
+        <div class="text-muted small">Manage outpatient electronic prescriptions, medication dosages, and pharmacy dispensing</div>
+    </div>
+    {% if current_user.role_name in ['Super Admin', 'Hospital Admin', 'Doctor'] %}
+    <a href="{{ url_for('prescriptions.create') }}" class="btn btn-warning text-dark fw-semibold btn-sm">
+        <i class="bi bi-plus-lg me-1"></i>Write New Prescription
+    </a>
+    {% endif %}
+</div>
+
+<!-- Search Bar -->
+<div class="card shadow-sm mb-4">
+    <div class="card-body p-3">
+        <form method="GET" class="d-flex gap-2">
+            <div class="input-group input-group-sm">
+                <span class="input-group-text bg-light"><i class="bi bi-search"></i></span>
+                <input type="text" name="search" class="form-control" placeholder="Search by patient name, Rx ID, or diagnosis..." value="{{ search }}">
+            </div>
+            <button type="submit" class="btn btn-sm btn-primary">Search</button>
+            <a href="{{ url_for('prescriptions.index') }}" class="btn btn-sm btn-outline-secondary">Reset</a>
+        </form>
+    </div>
+</div>
+
+<!-- Prescriptions Table -->
+<div class="card shadow-sm">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>Rx ID</th>
+                    <th>Date</th>
+                    <th>Patient Name</th>
+                    <th>Doctor</th>
+                    <th>Diagnosis</th>
+                    <th>Medications</th>
+                    <th>Status</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for rx in prescriptions.items %}
+                <tr>
+                    <td><code>{{ rx.prescription_id }}</code></td>
+                    <td>{{ rx.prescription_date | format_date }}</td>
+                    <td>
+                        <a href="{{ url_for('patients.view_profile', patient_id=rx.patient_id) }}" class="fw-bold text-dark text-decoration-none">
+                            {{ rx.patient.full_name }}
+                        </a>
+                        <div class="text-muted small">{{ rx.patient.gender }}, {{ rx.patient.age }} yrs</div>
+                    </td>
+                    <td>Dr. {{ rx.doctor.name }}</td>
+                    <td class="fw-semibold text-primary">{{ rx.diagnosis }}</td>
+                    <td>
+                        <span class="badge bg-light text-dark border">{{ rx.items.count() }} Medications</span>
+                    </td>
+                    <td><span class="badge {{ rx.status | status_badge }}">{{ rx.status }}</span></td>
+                    <td class="text-end">
+                        <div class="btn-group btn-group-sm">
+                            <a href="{{ url_for('prescriptions.print_rx', rx_id=rx.id) }}" target="_blank" class="btn btn-outline-primary" title="Print Prescription Slip">
+                                <i class="bi bi-printer"></i> Print Rx
+                            </a>
+                            {% if current_user.role_name in ['Super Admin', 'Hospital Admin', 'Pharmacist'] and rx.status != 'Dispensed' %}
+                            <a href="{{ url_for('pharmacy.dispense_prescription', rx_id=rx.id) }}" class="btn btn-outline-success" title="Dispense at Pharmacy">
+                                <i class="bi bi-capsule"></i> Dispense
+                            </a>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="8" class="text-center py-4 text-muted">No prescriptions recorded.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if prescriptions.pages > 1 %}
+    <div class="card-footer bg-white border-top py-3 d-flex justify-content-between align-items-center">
+        <div class="small text-muted">Showing Page {{ prescriptions.page }} of {{ prescriptions.pages }}</div>
+        <ul class="pagination pagination-sm mb-0">
+            {% for p in prescriptions.iter_pages() %}
+                {% if p %}
+                    <li class="page-item {% if p == prescriptions.page %}active{% endif %}">
+                        <a class="page-link" href="{{ url_for('prescriptions.index', page=p, search=search) }}">{{ p }}</a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link">…</span></li>
+                {% endif %}
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
